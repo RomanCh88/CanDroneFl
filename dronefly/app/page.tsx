@@ -85,38 +85,56 @@ function HomeInner() {
     ? DRONE_PROFILES.map(drone => assess(drone, buildWeatherPoint(weather.current), lang))
     : [];
 
+  // Find the index of the current hour so the timeline starts from now, not midnight.
+  // Open-Meteo returns local-time strings (timezone: auto), so compare using local clock.
+  const currentHourStart = weather
+    ? (() => {
+        const now = new Date();
+        const pad = (n: number) => String(n).padStart(2, '0');
+        // Build "YYYY-MM-DDTHH:00" in local time to match Open-Meteo's format
+        const localNow =
+          `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+          `T${pad(now.getHours())}:00`;
+        const idx = weather.hourly.time.findIndex(t => t >= localNow);
+        return idx >= 0 ? idx : 0;
+      })()
+    : 0;
+
   const hourlyAssessments: HourlyAssessment[][] = weather
     ? DRONE_PROFILES.map(drone =>
-        weather.hourly.time.map((time, i) => ({
+        weather.hourly.time.slice(currentHourStart, currentHourStart + 48).map((time, i) => {
+          const ri = currentHourStart + i; // real index into the full arrays
+          return ({
           time,
           assessment: assess(drone, {
-            temperature: weather.hourly.temperature_2m[i],
-            humidity: weather.hourly.relative_humidity_2m[i],
-            dewPoint: weather.hourly.dew_point_2m[i],
-            precipitation: weather.hourly.precipitation[i],
-            rain: weather.hourly.rain[i],
-            snowfall: weather.hourly.snowfall[i],
-            cloudCover: weather.hourly.cloud_cover[i],
-            visibility: weather.hourly.visibility[i],
-            windSpeed: weather.hourly.wind_speed_10m[i],
-            windGusts: weather.hourly.wind_gusts_10m[i],
-            windDirection: weather.hourly.wind_direction_10m[i],
-            weatherCode: weather.hourly.weather_code[i],
+            temperature: weather.hourly.temperature_2m[ri],
+            humidity: weather.hourly.relative_humidity_2m[ri],
+            dewPoint: weather.hourly.dew_point_2m[ri],
+            precipitation: weather.hourly.precipitation[ri],
+            rain: weather.hourly.rain[ri],
+            snowfall: weather.hourly.snowfall[ri],
+            cloudCover: weather.hourly.cloud_cover[ri],
+            visibility: weather.hourly.visibility[ri],
+            windSpeed: weather.hourly.wind_speed_10m[ri],
+            windGusts: weather.hourly.wind_gusts_10m[ri],
+            windDirection: weather.hourly.wind_direction_10m[ri],
+            weatherCode: weather.hourly.weather_code[ri],
           }, lang),
           weather: {
-            temperature: weather.hourly.temperature_2m[i],
-            windSpeed: weather.hourly.wind_speed_10m[i],
-            windGusts: weather.hourly.wind_gusts_10m[i],
-            windDirection: weather.hourly.wind_direction_10m[i],
-            precipitation: weather.hourly.precipitation[i],
-            snowfall: weather.hourly.snowfall[i],
-            visibility: weather.hourly.visibility[i],
-            cloudCover: weather.hourly.cloud_cover[i],
-            humidity: weather.hourly.relative_humidity_2m[i],
-            dewPoint: weather.hourly.dew_point_2m[i],
-            weatherCode: weather.hourly.weather_code[i],
+            temperature: weather.hourly.temperature_2m[ri],
+            windSpeed: weather.hourly.wind_speed_10m[ri],
+            windGusts: weather.hourly.wind_gusts_10m[ri],
+            windDirection: weather.hourly.wind_direction_10m[ri],
+            precipitation: weather.hourly.precipitation[ri],
+            snowfall: weather.hourly.snowfall[ri],
+            visibility: weather.hourly.visibility[ri],
+            cloudCover: weather.hourly.cloud_cover[ri],
+            humidity: weather.hourly.relative_humidity_2m[ri],
+            dewPoint: weather.hourly.dew_point_2m[ri],
+            weatherCode: weather.hourly.weather_code[ri],
           },
-        }))
+        });
+        })
       )
     : [];
 
