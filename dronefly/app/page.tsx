@@ -227,7 +227,12 @@ function HomeInner() {
             <div className="text-xs mb-3" style={{ color: '#4a6080', fontFamily: 'var(--font-jetbrains)' }}>
               {tr.platformDetail(droneName.toUpperCase())}
             </div>
-            <DroneDetail drone={selectedDrone} assessment={selectedAssessment} />
+            <DroneDetail
+              drone={selectedDrone}
+              assessment={selectedAssessment}
+              windSpeed={weather.current.wind_speed_10m}
+              windDirection={weather.current.wind_direction_10m}
+            />
           </section>
         )}
 

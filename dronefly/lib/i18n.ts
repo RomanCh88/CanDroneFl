@@ -102,6 +102,24 @@ export type Translations = {
   lowDeltaTDegrades: string;
   // wmo unknown
   wmoUnknown: string;
+  // wind range
+  windRangeImpact: string;
+  windFrom: string;
+  dirN: string;
+  dirNE: string;
+  dirE: string;
+  dirSE: string;
+  dirS: string;
+  dirSW: string;
+  dirW: string;
+  dirNW: string;
+  // consequences
+  consequences: string;
+  impactRange: string;
+  impactEndurance: string;
+  impactVisual: string;
+  impactThermal: string;
+  impactIcing: string;
   // statuses
   statusGo: string;
   statusCaution: string;
@@ -208,6 +226,22 @@ const uk: Translations = {
   lightSnowDegrades: 'Слабкий снігопад погіршує теплове зображення',
   lowDeltaTDegrades: 'Низька різниця температур між повітрям і землею знижує тепловий контраст',
   wmoUnknown: 'Невідомо',
+  windRangeImpact: 'ВПЛИВ ВІТРУ НА ДАЛЬНІСТЬ',
+  windFrom: 'Вітер з',
+  dirN: 'Пн',
+  dirNE: 'ПнСх',
+  dirE: 'Сх',
+  dirSE: 'ПдСх',
+  dirS: 'Пд',
+  dirSW: 'ПдЗх',
+  dirW: 'Зх',
+  dirNW: 'ПнЗх',
+  consequences: 'НАСЛІДКИ',
+  impactRange: 'Дальність польоту',
+  impactEndurance: 'Час польоту',
+  impactVisual: 'Візуальний сенсор',
+  impactThermal: 'Тепловізор',
+  impactIcing: 'Ймовірність обмерзання',
   statusGo: 'ДОЗВІЛ',
   statusCaution: 'ОБЕРЕЖНО',
   statusNoGo: 'ЗАБОРОНА',
@@ -313,6 +347,22 @@ const en: Translations = {
   lightSnowDegrades: 'Light snowfall degrades thermal',
   lowDeltaTDegrades: 'Low temperature delta between air and ground degrades thermal contrast',
   wmoUnknown: 'Unknown',
+  windRangeImpact: 'WIND RANGE IMPACT',
+  windFrom: 'Wind from',
+  dirN: 'N',
+  dirNE: 'NE',
+  dirE: 'E',
+  dirSE: 'SE',
+  dirS: 'S',
+  dirSW: 'SW',
+  dirW: 'W',
+  dirNW: 'NW',
+  consequences: 'CONSEQUENCES',
+  impactRange: 'Flight range',
+  impactEndurance: 'Flight time',
+  impactVisual: 'Visual sensor',
+  impactThermal: 'Thermal camera',
+  impactIcing: 'Icing probability',
   statusGo: 'GO',
   statusCaution: 'CAUTION',
   statusNoGo: 'NO-GO',
