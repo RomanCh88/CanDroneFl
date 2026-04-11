@@ -16,6 +16,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Leaflet dark-mode overrides */
+.leaflet-container {
+  background: #0a0f1a;
+}
+.map-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.8) saturate(0.6);
+}
+.leaflet-control-zoom a {
+  background: #141b2d !important;
+  color: #c8d0e0 !important;
+  border-color: #1e2d45 !important;
+}
+.leaflet-control-attribution {
+  background: rgba(10, 15, 26, 0.8) !important;
+  color: #4a6080 !important;
+  font-size: 10px !important;
+}
+.leaflet-control-attribution a {
+  color: #00b4d8 !important;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;

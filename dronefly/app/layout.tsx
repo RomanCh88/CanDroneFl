@@ -27,6 +27,7 @@ export default function RootLayout({
   return (
     <html
       lang="uk"
+      translate="no"
       className={`${exo2.variable} ${jetbrainsMono.variable}`}
       style={{ fontFamily: "var(--font-exo2), sans-serif" }}
     >

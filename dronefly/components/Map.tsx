@@ -82,27 +82,6 @@ export default function Map({ lat, lng, onLocationChange }: MapProps) {
       <div className="absolute bottom-2 left-2 bg-black/70 text-[#00b4d8] text-xs font-mono px-2 py-1 z-[1000]">
         {lat.toFixed(4)}, {lng.toFixed(4)}
       </div>
-      <style jsx global>{`
-        .leaflet-container {
-          background: #0a0f1a;
-        }
-        .map-tiles {
-          filter: invert(1) hue-rotate(180deg) brightness(0.8) saturate(0.6);
-        }
-        .leaflet-control-zoom a {
-          background: #141b2d !important;
-          color: #c8d0e0 !important;
-          border-color: #1e2d45 !important;
-        }
-        .leaflet-control-attribution {
-          background: rgba(10, 15, 26, 0.8) !important;
-          color: #4a6080 !important;
-          font-size: 10px !important;
-        }
-        .leaflet-control-attribution a {
-          color: #00b4d8 !important;
-        }
-      `}</style>
     </div>
   );
 }
