@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Read(//usr/local/bin/**)",
+      "Read(//home/piratesrome/.nvm/**)",
+      "Bash(curl -fsSL https://deb.nodesource.com/setup_20.x)",
+      "Bash(sudo -E bash -)",
+      "Bash(sudo apt-get:*)",
+      "Bash(curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh)",
+      "Bash(bash)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash(source \"$NVM_DIR/nvm.sh\")",
+      "Bash(npx create-next-app@latest dronefly --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --no-turbopack)",
+      "Bash(npm install:*)",
+      "Bash(grep -r dynamic /mnt/d/CanDroneFly/dronefly/node_modules/next/dist/docs/01-app/02-guides/ --include=*.md -l)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}
