@@ -105,6 +105,10 @@ export type Translations = {
   lowDeltaTDegrades: string;
   // wmo unknown
   wmoUnknown: string;
+  // forecast hour
+  forecastDetailFor: (time: string) => string;
+  forecastHint: string;
+  close: string;
   // wind range
   windRangeImpact: string;
   windFrom: string;
@@ -232,6 +236,9 @@ const uk: Translations = {
   lightSnowDegrades: 'Слабкий снігопад погіршує теплове зображення',
   lowDeltaTDegrades: 'Низька різниця температур між повітрям і землею знижує тепловий контраст',
   wmoUnknown: 'Невідомо',
+  forecastDetailFor: (time) => `// ПРОГНОЗ НА ${time}`,
+  forecastHint: 'Натисніть на годину для детального звіту',
+  close: 'ЗАКРИТИ',
   windRangeImpact: 'ВПЛИВ ВІТРУ НА ДАЛЬНІСТЬ',
   windFrom: 'Вітер з',
   dirN: 'Пн',
@@ -356,6 +363,9 @@ const en: Translations = {
   lightSnowDegrades: 'Light snowfall degrades thermal',
   lowDeltaTDegrades: 'Low temperature delta between air and ground degrades thermal contrast',
   wmoUnknown: 'Unknown',
+  forecastDetailFor: (time) => `// FORECAST FOR ${time}`,
+  forecastHint: 'Click any hour bar for a full report',
+  close: 'CLOSE',
   windRangeImpact: 'WIND RANGE IMPACT',
   windFrom: 'Wind from',
   dirN: 'N',

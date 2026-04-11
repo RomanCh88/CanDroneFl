@@ -44,6 +44,7 @@ function HomeInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDroneId, setSelectedDroneId] = useState(DRONE_PROFILES[0].id);
+  const [forecastHourIndex, setForecastHourIndex] = useState<number | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -118,6 +119,11 @@ function HomeInner() {
         }))
       )
     : [];
+
+  const handleDroneSelect = useCallback((id: string) => {
+    setSelectedDroneId(id);
+    setForecastHourIndex(null);
+  }, []);
 
   const selectedDroneIndex = DRONE_PROFILES.findIndex(p => p.id === selectedDroneId);
   const selectedDrone = DRONE_PROFILES[selectedDroneIndex];
@@ -219,7 +225,7 @@ function HomeInner() {
               profiles={DRONE_PROFILES}
               assessments={currentAssessments}
               selectedId={selectedDroneId}
-              onSelect={setSelectedDroneId}
+              onSelect={handleDroneSelect}
             />
           </section>
         )}
@@ -247,7 +253,37 @@ function HomeInner() {
               profiles={DRONE_PROFILES}
               hourlyData={hourlyAssessments}
               selectedDroneId={selectedDroneId}
-              onDroneSelect={setSelectedDroneId}
+              onDroneSelect={handleDroneSelect}
+              selectedHour={forecastHourIndex}
+              onHourSelect={setForecastHourIndex}
+            />
+          </section>
+        )}
+
+        {weather && forecastHourIndex !== null && selectedHourly[forecastHourIndex] && selectedDrone && (
+          <section className="border-t pt-4" style={{ borderColor: '#00b4d8' }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-xs" style={{ color: '#00b4d8', fontFamily: 'var(--font-jetbrains)' }}>
+                {tr.forecastDetailFor(
+                  new Date(selectedHourly[forecastHourIndex].time).toLocaleString(
+                    lang === 'uk' ? 'uk-UA' : 'en-GB',
+                    { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+                  )
+                )}
+              </div>
+              <button
+                onClick={() => setForecastHourIndex(null)}
+                className="text-xs px-2 py-1 border transition-colors font-mono"
+                style={{ borderColor: '#1e2d45', color: '#4a6080', fontFamily: 'var(--font-jetbrains)' }}
+              >
+                × {tr.close}
+              </button>
+            </div>
+            <DroneDetail
+              drone={selectedDrone}
+              assessment={selectedHourly[forecastHourIndex].assessment}
+              windSpeed={selectedHourly[forecastHourIndex].weather.windSpeed}
+              windDirection={selectedHourly[forecastHourIndex].weather.windDirection}
             />
           </section>
         )}

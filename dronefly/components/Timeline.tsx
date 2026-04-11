@@ -10,6 +10,8 @@ interface TimelineProps {
   hourlyData: HourlyAssessment[][];
   selectedDroneId: string;
   onDroneSelect: (id: string) => void;
+  selectedHour: number | null;
+  onHourSelect: (index: number | null) => void;
 }
 
 const statusBg = {
@@ -24,7 +26,7 @@ const statusText = {
   NO_GO: 'text-[#ff3344]',
 };
 
-export default function Timeline({ profiles, hourlyData, selectedDroneId, onDroneSelect }: TimelineProps) {
+export default function Timeline({ profiles, hourlyData, selectedDroneId, onDroneSelect, selectedHour, onHourSelect }: TimelineProps) {
   const { lang, tr } = useLanguage();
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
   const droneIndex = profiles.findIndex(p => p.id === selectedDroneId);
@@ -71,6 +73,8 @@ export default function Timeline({ profiles, hourlyData, selectedDroneId, onDron
           {data.map((h, i) => {
             const d = new Date(h.time);
             const showDate = i === 0 || d.getHours() === 0;
+            const isPinned = selectedHour === i;
+            const isHovered = hoveredHour === i;
             return (
               <div key={i} className="flex flex-col items-center">
                 {showDate && (
@@ -80,11 +84,16 @@ export default function Timeline({ profiles, hourlyData, selectedDroneId, onDron
                 )}
                 {!showDate && <div className="mb-1 h-4" />}
                 <div
-                  className={`w-6 h-8 cursor-pointer transition-opacity ${statusBg[h.assessment.status]} ${
-                    hoveredHour === i ? 'opacity-100 ring-1 ring-white' : 'opacity-70 hover:opacity-90'
+                  className={`w-6 h-8 cursor-pointer transition-all ${statusBg[h.assessment.status]} ${
+                    isPinned
+                      ? 'opacity-100 ring-2 ring-white'
+                      : isHovered
+                      ? 'opacity-100 ring-1 ring-white/60'
+                      : 'opacity-60 hover:opacity-85'
                   }`}
                   onMouseEnter={() => setHoveredHour(i)}
                   onMouseLeave={() => setHoveredHour(null)}
+                  onClick={() => onHourSelect(isPinned ? null : i)}
                   title={`${formatHour(h.time)} — ${h.assessment.status}`}
                 />
                 <div className="text-[#4a6080] text-xs font-mono mt-1">
@@ -96,9 +105,12 @@ export default function Timeline({ profiles, hourlyData, selectedDroneId, onDron
         </div>
       </div>
 
-      {/* Hover detail */}
-      {hovered && (
-        <div className="border border-[#1e2d45] p-3 mt-2 bg-[#0d1424]">
+      {/* Hint */}
+      <div className="text-[#2d4060] text-xs font-mono mt-1 mb-2">{tr.forecastHint}</div>
+
+      {/* Hover quick-info (only when nothing is pinned) */}
+      {hovered && selectedHour === null && (
+        <div className="border border-[#1e2d45] p-3 mt-1 bg-[#0d1424]">
           <div className="flex items-center gap-3 mb-2">
             <span className={`font-mono font-bold text-lg ${statusText[hovered.assessment.status]}`}>
               {hovered.assessment.status === 'GO' ? tr.statusGo : hovered.assessment.status === 'CAUTION' ? tr.statusCaution : tr.statusNoGo}
