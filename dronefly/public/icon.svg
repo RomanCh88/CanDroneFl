@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="80" fill="#0a0f1a"/>
+  <!-- Drone arms -->
+  <line x1="256" y1="256" x2="120" y2="120" stroke="#1a3a5c" stroke-width="28" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="392" y2="120" stroke="#1a3a5c" stroke-width="28" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="120" y2="392" stroke="#1a3a5c" stroke-width="28" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="392" y2="392" stroke="#1a3a5c" stroke-width="28" stroke-linecap="round"/>
+  <!-- Motors -->
+  <circle cx="110" cy="110" r="36" fill="#0f2040" stroke="#00d4ff" stroke-width="6"/>
+  <circle cx="402" cy="110" r="36" fill="#0f2040" stroke="#00d4ff" stroke-width="6"/>
+  <circle cx="110" cy="402" r="36" fill="#0f2040" stroke="#00d4ff" stroke-width="6"/>
+  <circle cx="402" cy="402" r="36" fill="#0f2040" stroke="#00d4ff" stroke-width="6"/>
+  <!-- Propellers top-left -->
+  <ellipse cx="90" cy="110" rx="32" ry="8" fill="#00d4ff" opacity="0.7" transform="rotate(-20 90 110)"/>
+  <ellipse cx="130" cy="110" rx="32" ry="8" fill="#00d4ff" opacity="0.7" transform="rotate(-20 130 110)"/>
+  <!-- Propellers top-right -->
+  <ellipse cx="382" cy="110" rx="32" ry="8" fill="#00d4ff" opacity="0.7" transform="rotate(20 382 110)"/>
+  <ellipse cx="422" cy="110" rx="32" ry="8" fill="#00d4ff" opacity="0.7" transform="rotate(20 422 110)"/>
+  <!-- Propellers bottom-left -->
+  <ellipse cx="90" cy="402" rx="32" ry="8" fill="#00d4ff" opacity="0.7" transform="rotate(20 90 402)"/>
+  <ellipse cx="130" cy="402" rx="32" ry="8" fill="#00d4ff" opacity="0.7" transform="rotate(20 130 402)"/>
+  <!-- Propellers bottom-right -->
+  <ellipse cx="382" cy="402" rx="32" ry="8" fill="#00d4ff" opacity="0.7" transform="rotate(-20 382 402)"/>
+  <ellipse cx="422" cy="402" rx="32" ry="8" fill="#00d4ff" opacity="0.7" transform="rotate(-20 422 402)"/>
+  <!-- Center body -->
+  <rect x="216" y="216" width="80" height="80" rx="12" fill="#0f2040" stroke="#00d4ff" stroke-width="4"/>
+  <!-- Center LED -->
+  <circle cx="256" cy="256" r="12" fill="#00ff88"/>
+  <circle cx="256" cy="256" r="6" fill="#ffffff" opacity="0.8"/>
+</svg>
