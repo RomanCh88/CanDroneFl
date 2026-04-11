@@ -17,7 +17,7 @@ const statusColor = {
 };
 
 export default function DroneCards({ profiles, assessments, selectedId, onSelect }: DroneCardsProps) {
-  const { lang } = useLanguage();
+  const { lang, tr } = useLanguage();
 
   return (
     <div className="grid grid-cols-5 gap-2">
@@ -38,7 +38,9 @@ export default function DroneCards({ profiles, assessments, selectedId, onSelect
           >
             <div className="text-xl mb-1">{drone.icon}</div>
             <div className="text-[#c8d0e0] text-xs font-mono mb-2 leading-tight">{name}</div>
-            <div className={`text-xl font-bold font-mono ${colors.text}`}>{a.status.replace('_', '-')}</div>
+            <div className={`text-xl font-bold font-mono ${colors.text}`}>
+              {a.status === 'GO' ? tr.statusGo : a.status === 'CAUTION' ? tr.statusCaution : tr.statusNoGo}
+            </div>
             <div className="text-[#4a6080] text-xs font-mono mt-1">
               ↗ {a.adjustedRange} km
             </div>

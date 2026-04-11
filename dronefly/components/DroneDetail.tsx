@@ -51,7 +51,7 @@ export default function DroneDetail({ drone, assessment: a }: DroneDetailProps) 
       {/* Status + Profile */}
       <Section title={tr.flightStatus}>
         <div className={`text-4xl font-bold font-mono border-l-4 pl-3 mb-3 ${sc}`}>
-          {a.status.replace('_', '-')}
+          {a.status === 'GO' ? tr.statusGo : a.status === 'CAUTION' ? tr.statusCaution : tr.statusNoGo}
         </div>
         <div className="text-[#c8d0e0] text-sm font-mono mb-1">{drone.icon} {lang === 'uk' ? (drone.nameUk ?? drone.name) : drone.name}</div>
         <div className="text-[#4a6080] text-xs mb-3">{notes}</div>
@@ -73,7 +73,9 @@ export default function DroneDetail({ drone, assessment: a }: DroneDetailProps) 
         <div className="space-y-3">
           <div>
             <div className="text-[#4a6080] text-xs font-mono mb-1">{tr.visualCamera}</div>
-            <div className={`text-lg font-bold font-mono ${sensorColor[a.sensorStatus]}`}>{a.sensorStatus}</div>
+            <div className={`text-lg font-bold font-mono ${sensorColor[a.sensorStatus]}`}>
+              {a.sensorStatus === 'CLEAR' ? tr.sensorClear : a.sensorStatus === 'DEGRADED' ? tr.sensorDegraded : tr.sensorBlind}
+            </div>
             {a.sensorReasons.map((r, i) => (
               <div key={i} className="text-xs font-mono text-[#ffaa00] mt-0.5">▶ {r}</div>
             ))}
@@ -86,7 +88,7 @@ export default function DroneDetail({ drone, assessment: a }: DroneDetailProps) 
             <div className="border-t border-[#1e2d45] pt-3">
               <div className="text-[#4a6080] text-xs font-mono mb-1">{tr.thermalCamera}</div>
               <div className={`text-lg font-bold font-mono ${thermalColor[a.thermalEffectiveness]}`}>
-                {a.thermalEffectiveness}
+                {a.thermalEffectiveness === 'EFFECTIVE' ? tr.thermalEffective : a.thermalEffectiveness === 'DEGRADED' ? tr.thermalDegraded : tr.thermalBlind}
               </div>
               {a.thermalReasons.map((r, i) => (
                 <div key={i} className="text-xs font-mono text-[#ffaa00] mt-0.5">▶ {r}</div>
@@ -99,7 +101,9 @@ export default function DroneDetail({ drone, assessment: a }: DroneDetailProps) 
 
           <div className="border-t border-[#1e2d45] pt-3">
             <div className="text-[#4a6080] text-xs font-mono mb-1">{tr.icingRisk}</div>
-            <div className={`text-lg font-bold font-mono ${icingColor[a.icingRisk]}`}>{a.icingRisk}</div>
+            <div className={`text-lg font-bold font-mono ${icingColor[a.icingRisk]}`}>
+              {a.icingRisk === 'NONE' ? tr.icingNone : a.icingRisk === 'POSSIBLE' ? tr.icingPossible : tr.icingLikely}
+            </div>
           </div>
         </div>
       </Section>

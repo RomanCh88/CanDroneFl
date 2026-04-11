@@ -102,6 +102,19 @@ export type Translations = {
   lowDeltaTDegrades: string;
   // wmo unknown
   wmoUnknown: string;
+  // statuses
+  statusGo: string;
+  statusCaution: string;
+  statusNoGo: string;
+  sensorClear: string;
+  sensorDegraded: string;
+  sensorBlind: string;
+  thermalEffective: string;
+  thermalDegraded: string;
+  thermalBlind: string;
+  icingNone: string;
+  icingPossible: string;
+  icingLikely: string;
 };
 
 const uk: Translations = {
@@ -195,6 +208,18 @@ const uk: Translations = {
   lightSnowDegrades: 'Слабкий снігопад погіршує теплове зображення',
   lowDeltaTDegrades: 'Низька різниця температур між повітрям і землею знижує тепловий контраст',
   wmoUnknown: 'Невідомо',
+  statusGo: 'ДОЗВІЛ',
+  statusCaution: 'ОБЕРЕЖНО',
+  statusNoGo: 'ЗАБОРОНА',
+  sensorClear: 'ЧИСТО',
+  sensorDegraded: 'ПОГІРШЕНО',
+  sensorBlind: 'СЛІПИЙ',
+  thermalEffective: 'ЕФЕКТИВНО',
+  thermalDegraded: 'ПОГІРШЕНО',
+  thermalBlind: 'СЛІПИЙ',
+  icingNone: 'ВІДСУТНЄ',
+  icingPossible: 'МОЖЛИВЕ',
+  icingLikely: 'ЙМОВІРНЕ',
 };
 
 const en: Translations = {
@@ -288,6 +313,18 @@ const en: Translations = {
   lightSnowDegrades: 'Light snowfall degrades thermal',
   lowDeltaTDegrades: 'Low temperature delta between air and ground degrades thermal contrast',
   wmoUnknown: 'Unknown',
+  statusGo: 'GO',
+  statusCaution: 'CAUTION',
+  statusNoGo: 'NO-GO',
+  sensorClear: 'CLEAR',
+  sensorDegraded: 'DEGRADED',
+  sensorBlind: 'BLIND',
+  thermalEffective: 'EFFECTIVE',
+  thermalDegraded: 'DEGRADED',
+  thermalBlind: 'BLIND',
+  icingNone: 'NONE',
+  icingPossible: 'POSSIBLE',
+  icingLikely: 'LIKELY',
 };
 
 const translations: Record<Lang, Translations> = { uk, en };

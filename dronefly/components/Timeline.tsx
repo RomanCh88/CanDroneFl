@@ -101,7 +101,7 @@ export default function Timeline({ profiles, hourlyData, selectedDroneId, onDron
         <div className="border border-[#1e2d45] p-3 mt-2 bg-[#0d1424]">
           <div className="flex items-center gap-3 mb-2">
             <span className={`font-mono font-bold text-lg ${statusText[hovered.assessment.status]}`}>
-              {hovered.assessment.status.replace('_', '-')}
+              {hovered.assessment.status === 'GO' ? tr.statusGo : hovered.assessment.status === 'CAUTION' ? tr.statusCaution : tr.statusNoGo}
             </span>
             <span className="text-[#4a6080] font-mono text-sm">
               {new Date(hovered.time).toLocaleString(locale, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
