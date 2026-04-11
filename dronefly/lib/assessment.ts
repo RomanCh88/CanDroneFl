@@ -15,6 +15,7 @@ interface WeatherPoint {
   windSpeed: number;
   windGusts: number;
   windDirection: number;
+  weatherCode: number;
 }
 
 function assessIcingRisk(
@@ -35,17 +36,21 @@ function assessIcingRisk(
   return 'NONE';
 }
 
+const FOG_CODES = new Set([45, 48]);
+
 function assessSensor(
   visibility: number,
   precipitation: number,
   cloudCover: number,
+  weatherCode: number,
   lang: Lang
 ): { status: 'CLEAR' | 'DEGRADED' | 'BLIND'; reasons: string[] } {
   const tr = getTranslations(lang);
   const reasons: string[] = [];
+  const isFog = FOG_CODES.has(weatherCode);
 
   if (visibility < 300) {
-    reasons.push(tr.visBlind);
+    reasons.push(isFog ? tr.fogVisBlind : tr.visBlind);
     return { status: 'BLIND', reasons };
   }
   if (precipitation > 8) {
@@ -54,7 +59,10 @@ function assessSensor(
   }
 
   if (visibility >= 300 && visibility < 1000) {
-    reasons.push(tr.reducedVisibility);
+    reasons.push(isFog ? tr.fogVisDegraded : tr.reducedVisibility);
+  } else if (isFog) {
+    // Fog present but visibility still >1000m — flag early
+    reasons.push(tr.fogVisPresent);
   }
   if (precipitation > 0.5) {
     reasons.push(tr.rainOnLens);
@@ -118,7 +126,7 @@ export function assess(drone: DroneProfile, wx: WeatherPoint, lang: Lang = 'uk')
 
   if (noGoReasons.length > 0) {
     const thermal = assessThermal(wx.precipitation, wx.visibility, wx.snowfall, wx.humidity, wx.temperature, lang);
-    const sensor = assessSensor(wx.visibility, wx.precipitation, wx.cloudCover, lang);
+    const sensor = assessSensor(wx.visibility, wx.precipitation, wx.cloudCover, wx.weatherCode, lang);
     return {
       status: 'NO_GO',
       reasons: noGoReasons,
@@ -160,7 +168,7 @@ export function assess(drone: DroneProfile, wx: WeatherPoint, lang: Lang = 'uk')
   }
 
   const thermal = assessThermal(wx.precipitation, wx.visibility, wx.snowfall, wx.humidity, wx.temperature, lang);
-  const sensor = assessSensor(wx.visibility, wx.precipitation, wx.cloudCover, lang);
+  const sensor = assessSensor(wx.visibility, wx.precipitation, wx.cloudCover, wx.weatherCode, lang);
 
   return {
     status: cautionReasons.length > 0 ? 'CAUTION' : 'GO',

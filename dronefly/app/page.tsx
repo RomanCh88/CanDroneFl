@@ -33,6 +33,7 @@ function buildWeatherPoint(wx: WeatherData['current']) {
     windSpeed: wx.wind_speed_10m,
     windGusts: wx.wind_gusts_10m,
     windDirection: wx.wind_direction_10m,
+    weatherCode: wx.weather_code,
   };
 }
 
@@ -99,6 +100,7 @@ function HomeInner() {
             windSpeed: weather.hourly.wind_speed_10m[i],
             windGusts: weather.hourly.wind_gusts_10m[i],
             windDirection: weather.hourly.wind_direction_10m[i],
+            weatherCode: weather.hourly.weather_code[i],
           }, lang),
           weather: {
             temperature: weather.hourly.temperature_2m[i],

@@ -88,6 +88,9 @@ export type Translations = {
   visBlind: string;
   heavyPrecipBlind: string;
   reducedVisibility: string;
+  fogVisBlind: string;
+  fogVisDegraded: string;
+  fogVisPresent: string;
   rainOnLens: string;
   heavyCloudContrast: string;
   noThermalCamera: string;
@@ -214,6 +217,9 @@ const uk: Translations = {
   visBlind: 'Видимість <300м — сенсор осліп',
   heavyPrecipBlind: 'Сильні опади засліплюють лінзу',
   reducedVisibility: 'Знижена видимість (300–1000м)',
+  fogVisBlind: 'Туман — видимість <300м, візуальний сенсор засліплений',
+  fogVisDegraded: 'Туман знижує видимість (300–1000м)',
+  fogVisPresent: 'Туман — знижена дальність огляду',
   rainOnLens: 'Дощ/сніг на лінзі',
   heavyCloudContrast: 'Густа хмарність знижує контраст',
   noThermalCamera: 'Тепловізор відсутній',
@@ -335,6 +341,9 @@ const en: Translations = {
   visBlind: 'Visibility <300m — visual sensor blind',
   heavyPrecipBlind: 'Heavy precipitation obscuring lens',
   reducedVisibility: 'Reduced visibility (300–1000m)',
+  fogVisBlind: 'Fog — visibility <300m, visual sensor blind',
+  fogVisDegraded: 'Fog reduces visibility (300–1000m)',
+  fogVisPresent: 'Fog detected — visual range reduced',
   rainOnLens: 'Rain/snow on lens',
   heavyCloudContrast: 'Heavy cloud cover reduces visual contrast',
   noThermalCamera: 'No thermal camera',
