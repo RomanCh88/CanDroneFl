@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "generate-icons": "node scripts/generate-icons.mjs",
+    "build": "node scripts/generate-icons.mjs && next build",
     "start": "next start",
     "lint": "eslint"
   },
