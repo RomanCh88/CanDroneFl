@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# firebase / app hosting
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+apphosting.local.yaml
+apphosting.*.local.yaml
+.apphosting/
+
+# AI agent skills (installed tooling; reinstall from skills-lock.json)
+.agents/
+.claude/skills/
+.claude/settings.local.json
