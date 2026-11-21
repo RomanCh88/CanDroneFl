@@ -29,7 +29,8 @@ The original spec is `../drone-wx-instructions.md` (repo root). Read it for the 
 - `app/profile/`: account page (sign in / out, preferences, saved locations CRUD, custom drones CRUD via `components/profile/DroneForm.tsx`). `layout.tsx` sets noindex metadata.
 - `lib/firebase.ts` (lazy init, `isFirebaseConfigured`), `lib/userData.ts` (Firestore CRUD and subscriptions), `contexts/AuthContext.tsx` (Google popup sign-in), `contexts/UserDataContext.tsx` (live data keyed by uid + two-way language sync), `components/AccountMenu.tsx` and `components/SavedLocationsMenu.tsx` (header).
 - Firestore: `users/{uid}` {displayName,email,photoURL,createdAt,updatedAt,prefs{lang,defaultLocationId,defaultDroneId}}, `users/{uid}/locations/{id}`, `users/{uid}/drones/{id}`. Custom drone app ids are `custom_<docId>`. `firestore.rules`: owner-only, with field whitelists and numeric bounds that mirror `BOUNDS` in DroneForm (keep both in sync). `app/manifest.ts` → `/manifest.webmanifest`.
-- `lib/weather.ts`: Open-Meteo fetch (`forecast_days=3` so the 48 h slice always fits, `wind_speed_unit=ms`, `timezone=auto`).
+- `lib/weather.ts` + `hooks/useWeather.ts`: Open-Meteo, client-side on purpose (free tier is per-IP; a server proxy would pool all users on one IP). `forecast_hours=48` → hourly[0] is the location's current hour (fixes the old browser-clock/timezone bug). Coords rounded to 0.01°. Hook: localStorage cache (`dronefly.wx`, 8 entries) shown instantly (stale-while-revalidate, "CACHED" badge), 300 ms debounce + AbortController (no out-of-order results), refresh every 15 min only while visible + on return/online, retry backoff. `fetchRouteWeather` = many points in ONE request with wind at 10/80/120/180 m (planner). Dashboard ratings are `useMemo`'d; payload uses `useDeferredValue`.
+- `public/sw.js` (v2): navigation network-first (fixes stale shell after deploys), static cache-first, weather network-first capped at 20 entries, non-GET untouched.
 - `lib/assessment.ts`: `assess(drone, WeatherPoint, lang)` is the core rules engine (NO_GO → CAUTION → GO), plus icing risk, visual sensor status and `findBestWindows` (≥2 consecutive GO hours).
 - `lib/thermal.ts`: thermal camera EFFECTIVE/DEGRADED/BLIND. `lib/range.ts`: `adjustRange` (wind penalty), `adjustEndurance` (cold penalty), `windRangeMultiplier` (per-heading, used by DroneDetail's range rose).
 - `lib/droneProfiles.ts`: the 5 profiles (fpv, mavic, heavy, fixed_small, fixed_large). Values match the spec. `EXAMPLE_SPEC_DRONE` = form prefill built from a real operator spec sheet (15 kg heavy multirotor).
@@ -37,17 +38,22 @@ The original spec is `../drone-wx-instructions.md` (repo root). Read it for the 
 - `lib/i18n.ts`: typed `Translations`, uk + en. **All user-facing strings, including assessment reasons, come from here**, so the engine takes `lang`. `contexts/LanguageContext.tsx`: default `uk`, persisted in localStorage (`dronefly.lang`), synced to the profile when signed in.
 - `lib/wmoCodes.ts`: WMO code → description/icon/severity.
 - `components/`: Map (dynamic, ssr:false), WeatherPanel, DroneCards, DroneDetail, Timeline (48 cells per drone, click selects a forecast hour), BestWindows, WindIndicator, DonateButton, PWARegister.
-- `public/sw.js`: hand-written service worker. Network-first for Open-Meteo (offline fallback to last forecast), cache-first for `/_next/static` + listed assets.
 - `types/index.ts`: DroneProfile, WeatherData (raw Open-Meteo shape), FlyabilityAssessment, HourlyAssessment, Location.
 - Styling: mostly inline `style={{}}` hex colours plus a few Tailwind arbitrary values. Palette: bg `#0a0f1a`, card `#141b2d`, border `#1e2d45`, muted `#4a6080`, GO `#00ff88`, CAUTION `#ffaa00`, NO_GO `#ff3344`, accent `#00b4d8`. Design rules: flat, angular HUD look, no gradients, shadows or rounded corners.
 
 ## Done (MVP + polish, git history up to 4a79aab)
 Weather fetch and panel · 5 profiles + assessment engine · drone cards · map picker (click/drag) + geolocation · 48 h timeline starting at the current hour, with per-hour detail · detail panel (reasons, thermal, sensor, icing, range/endurance, thresholds, directional range) · best windows · UA/EN i18n (the spec listed it as future work) · donate section · disclaimer/credits · PWA (manifest, icons, SW, iOS meta) · 15-min auto refresh.
-Detailed drone specs with payload model (2026-11-21, needs rules redeploy).
+Detailed drone specs with payload model (2026-11-21). Rules deployed 2026-11-21 (before emptyWeight/wind fields — redeploy needed).
 Phase 1 accounts (2026-11-21, not deployed yet): Google sign-in, /profile, saved locations, custom drones (shown on the dashboard with a CUSTOM badge), synced preferences, Firestore rules. Donations hidden (`lib/features.ts`).
 
-## Next: Phase 2 (requested by user)
-Flight path planner for signed-in users: build a route on the map with very good UX, more complex calculations, and a weather report for the current conditions along the path. Not designed yet.
+## Mission planner (`/mission`, signed-in only) — Phase 2, built 2026-11-21, not yet browser-tested
+- Files: `app/mission/`, `components/mission/MissionPlanner.tsx` (state + side panel), `components/mission/MissionMap.tsx` (Leaflet: draggable A/WP/B, route, reach polygons, range circle, turn-back ✕, wind box, legend), `lib/mission.ts` (pure maths), `lib/geo.ts`, `lib/missionStore.ts`, `lib/missionExport.ts`, `hooks/useRouteWeather.ts`.
+- Maths: airspeed ≤ max speed at payload (AUTO = best margin, scanned 1 km/h); usable time = endurance(min, cold) × speed factor (1 up to 80 % vmax → 0.9 at vmax) × (1 − reserve); per leg g = √(v²−c²)+a with vector-averaged wind of route samples at the chosen altitude (interpolated 10/80/120/180 m); return turn-back point by binary search; one-way battery-limit point; reach polygons (72 headings) capped by max range. Non-spec drones use type speed defaults (flagged "estimated").
+- Missions are NEVER in Firestore: sessionStorage by default, opt-in localStorage, per uid (`dronefly.missions.<uid>`), "clear all". Route weather cached in memory only. Weather requests send coords rounded to ~1 km.
+- Exports (all local): JSON, GPX 1.1 (wpt+rte), KML (route+areas), CSV (legs, UTF-8 BOM), PNG (canvas: OSM tiles — CORS `*` verified — with the dark filter, overlays, summary panel).
+- Weight/wind: specs have optional `emptyWeightKg` (→ take-off weight input on dashboard + planner) and `windEmptyMs`/`windFullMs` (user confirmed "12–17" means 17 empty → 12 full). Limits at payload: sustained = min(spec(p), 0.85·v), gust = min(1.25·spec(p), v). Older records fall back to limits.maxWindGusts/maxWindSpeed as empty/full.
+- Known model gap: computed out-and-back radius (9.2 km at 10 kg, no reserve) is below the spec sheet's 11.7 km because we use the lower endurance/speed values — the planner shows the spec radius for comparison.
+- Dev note: dev server in WSL on /mnt/d may miss files created from Windows (new routes 404) → restart it or use `WATCHPACK_POLLING=true`.
 
 ## Known issues / gaps (found while reviewing the code, 2026-11-21)
 Bugs / correctness:

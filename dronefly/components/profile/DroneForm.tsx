@@ -19,7 +19,8 @@ type BaseKey =
 type PerfKey =
   | 'maxPayloadKg' | 'maxRangeKm' | 'radiusEmptyKm' | 'radiusFullKm'
   | 'endEmptyMin' | 'endEmptyMax' | 'endLoadedMin' | 'endLoadedMax' | 'loadedPayloadKg'
-  | 'speedEmptyMin' | 'speedEmptyMax' | 'speedFullKmh' | 'ceilingMin' | 'ceilingMax';
+  | 'speedEmptyMin' | 'speedEmptyMax' | 'speedFullKmh' | 'ceilingMin' | 'ceilingMax'
+  | 'emptyWeightKg' | 'windEmptyMs' | 'windFullMs';
 
 type NumKey = BaseKey | PerfKey;
 
@@ -47,7 +48,13 @@ const BOUNDS: Record<NumKey, [number, number]> = {
   speedFullKmh: [1, 500],
   ceilingMin: [1, 10000],
   ceilingMax: [1, 10000],
+  emptyWeightKg: [0.05, 1000],
+  windEmptyMs: [0, 60],
+  windFullMs: [0, 60],
 };
+
+/** Spec fields that may be left empty entirely. */
+const OPTIONAL_PERF: PerfKey[] = ['emptyWeightKg'];
 
 /** "to" fields that may be left empty (then = "from"). */
 const OPTIONAL_MAX: Partial<Record<PerfKey, PerfKey>> = {
@@ -107,6 +114,10 @@ function toForm(d: Omit<DroneProfile, 'id'>, nameOverride?: string): FormState {
       speedFullKmh: str(p?.speedFullKmh),
       ceilingMin: str(p?.ceilingM.min),
       ceilingMax: str(p?.ceilingM.max),
+      emptyWeightKg: str(p?.emptyWeightKg),
+      // Older records stored the spec "12–17" as sustained/gusts; its meaning is 17 empty → 12 full.
+      windEmptyMs: str(p?.windEmptyMs ?? d.limits.maxWindGusts),
+      windFullMs: str(p?.windFullMs ?? d.limits.maxWindSpeed),
     },
     specs: Boolean(p),
     hasThermalCamera: d.hasThermalCamera,
@@ -169,6 +180,9 @@ export default function DroneForm({ initial, onSubmit, onCancel }: Props) {
     speedFullKmh: `${tr.specSpeed} ${tr.specSpeedFull}`,
     ceilingMin: tr.specCeiling,
     ceilingMax: tr.specCeiling,
+    emptyWeightKg: tr.specEmptyWeight,
+    windEmptyMs: `${tr.specWind} ${tr.specRadiusEmpty}`,
+    windFullMs: `${tr.specWind} ${tr.specRadiusFull}`,
   };
   const labelOf = (k: string) =>
     k === 'name' ? tr.nameLabel : (baseLabels as Record<string, string>)[k] ?? (perfLabels as Record<string, string>)[k] ?? k;
@@ -183,10 +197,12 @@ export default function DroneForm({ initial, onSubmit, onCancel }: Props) {
   const validate = (): CustomDroneInput | null => {
     const bad = new Set<string>();
     const n = {} as Record<NumKey, number>;
-    const keys: NumKey[] = form.specs ? [...BASE_KEYS.filter(k => k !== 'nominalRange' && k !== 'nominalEndurance'), ...PERF_KEYS] : BASE_KEYS;
+    // Specs mode: wind limits and range/endurance come from the specs table.
+    const keys: NumKey[] = form.specs ? [...BASE_KEYS.filter(k => !BASE_IN_SPECS.includes(k)), ...PERF_KEYS] : BASE_KEYS;
 
     for (const k of keys) {
       let raw = form.nums[k].replace(',', '.').trim();
+      if (raw === '' && OPTIONAL_PERF.includes(k as PerfKey)) { n[k] = NaN; continue; }
       const fallback = OPTIONAL_MAX[k as PerfKey];
       if (raw === '' && fallback) raw = form.nums[fallback].replace(',', '.').trim();
       const v = Number(raw);
@@ -207,6 +223,7 @@ export default function DroneForm({ initial, onSubmit, onCancel }: Props) {
       rel(n.speedFullKmh <= n.speedEmptyMax, 'speedFullKmh', 'speedEmptyMax');
       rel(n.radiusFullKm <= n.radiusEmptyKm, 'radiusFullKm', 'radiusEmptyKm');
       rel(n.ceilingMin <= n.ceilingMax, 'ceilingMin', 'ceilingMax');
+      rel(n.windFullMs <= n.windEmptyMs, 'windFullMs', 'windEmptyMs');
     }
     if (!form.name.trim()) bad.add('name');
     setErrors(bad);
@@ -224,6 +241,9 @@ export default function DroneForm({ initial, onSubmit, onCancel }: Props) {
           radiusFullKm: n.radiusFullKm,
           maxRangeKm: n.maxRangeKm,
           ceilingM: { min: n.ceilingMin, max: n.ceilingMax },
+          windEmptyMs: n.windEmptyMs,
+          windFullMs: n.windFullMs,
+          ...(Number.isFinite(n.emptyWeightKg) ? { emptyWeightKg: n.emptyWeightKg } : {}),
         }
       : undefined;
 
@@ -233,8 +253,9 @@ export default function DroneForm({ initial, onSubmit, onCancel }: Props) {
       type: form.type,
       description: '',
       limits: {
-        maxWindSpeed: n.maxWindSpeed,
-        maxWindGusts: n.maxWindGusts,
+        // Specs mode: fixed limits = the empty-drone spec (payload-dependent limits are computed).
+        maxWindSpeed: performance ? performance.windEmptyMs! : n.maxWindSpeed,
+        maxWindGusts: performance ? Math.min(80, Math.round(performance.windEmptyMs! * 1.25 * 10) / 10) : n.maxWindGusts,
         minTemperature: n.minTemperature,
         maxTemperature: n.maxTemperature,
         maxPrecipitation: n.maxPrecipitation,
@@ -381,6 +402,11 @@ export default function DroneForm({ initial, onSubmit, onCancel }: Props) {
               value={<>{unit(tr.toLabel)} {num('maxPayloadKg', { placeholder: '15' })} {unit(kg)}</>}
             />
             <SpecRow
+              label={tr.specEmptyWeight}
+              value={<>{num('emptyWeightKg', { placeholder: '25' })} {unit(kg)}</>}
+              note={<>{tr.specEmptyWeightNote}</>}
+            />
+            <SpecRow
               label={tr.specRange}
               value={<>{unit(tr.toLabel)} {num('maxRangeKm', { placeholder: '20' })} {unit(km)}</>}
               note={<>
@@ -407,8 +433,8 @@ export default function DroneForm({ initial, onSubmit, onCancel }: Props) {
             />
             <SpecRow
               label={tr.specWind}
-              value={<>{num('maxWindSpeed', { placeholder: '12' })}{dash}{num('maxWindGusts', { placeholder: '17' })} {unit(ms)}</>}
-              note={<>{tr.specWindSustained} – {tr.specWindGusts}</>}
+              value={<>{num('windEmptyMs', { placeholder: '17' })} {unit(tr.specRadiusEmpty)} {dash} {num('windFullMs', { placeholder: '12' })} {unit(`${ms} ${tr.specRadiusFull}`)}</>}
+              note={<>{tr.specWindNote}</>}
             />
             <div className="text-[10px] font-mono text-[#2d4060] pt-2">* {tr.specConservativeNote}</div>
           </div>

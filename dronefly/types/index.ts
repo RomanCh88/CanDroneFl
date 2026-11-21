@@ -46,6 +46,12 @@ export interface DronePerformance {
   radiusFullKm: number;          // effective radius at full payload, e.g. 10
   maxRangeKm: number;            // absolute range / link limit, e.g. 20
   ceilingM: SpecRange;           // practical ceiling, e.g. 400–500
+  /** Take-off mass without payload, incl. battery (kg). Enables "total weight" input. */
+  emptyWeightKg?: number;
+  /** Wind resistance without payload (m/s), e.g. 17. Absent on older records → limits.maxWindGusts. */
+  windEmptyMs?: number;
+  /** Wind resistance at full payload (m/s), e.g. 12. Absent on older records → limits.maxWindSpeed. */
+  windFullMs?: number;
 }
 
 /** Performance at a given payload and weather (output of lib/performance.ts). */
@@ -71,6 +77,14 @@ export interface PerformanceResult {
   limitedByRange: boolean;
   /** Wind / airspeed ratio; ≥ 0.85 means return is not guaranteed. */
   windRatio: number;
+  /** Sustained-wind limit at this payload (m/s) = min(spec interpolated by payload, 85 % of airspeed). */
+  windLimitSustained: number;
+  /** Gust limit at this payload (m/s) = min(1.25 × spec at payload, airspeed). */
+  windLimitGust: number;
+  /** Which bound set the sustained limit. */
+  windLimitBy: 'spec' | 'speed';
+  /** Total take-off weight (kg) when the empty weight is known. */
+  totalWeightKg?: number;
 }
 
 /** A user's saved position (Firestore: users/{uid}/locations/{id}). */
@@ -109,22 +123,19 @@ export interface WeatherData {
     temperature_2m: number[];
     relative_humidity_2m: number[];
     dew_point_2m: number[];
-    precipitation_probability: number[];
     precipitation: number[];
     rain: number[];
     snowfall: number[];
     weather_code: number[];
     cloud_cover: number[];
-    cloud_cover_low: number[];
-    cloud_cover_mid: number[];
-    cloud_cover_high: number[];
     visibility: number[];
     wind_speed_10m: number[];
     wind_speed_80m: number[];
     wind_direction_10m: number[];
     wind_gusts_10m: number[];
-    pressure_msl: number[];
   };
+  /** Offset of the location's timezone from UTC (seconds). */
+  utc_offset_seconds?: number;
   timezone: string;
   timezone_abbreviation: string;
 }

@@ -94,15 +94,19 @@ export function assess(drone: DroneProfile, wx: WeatherPoint, lang: Lang = 'uk',
 
   // Payload/weather-dependent performance (only for drones with detailed specs).
   const perf = drone.performance
-    ? computePerformance(drone.performance, opts.payloadKg ?? defaultPayload(drone.performance), wx)
+    ? computePerformance(drone.performance, opts.payloadKg ?? defaultPayload(drone.performance), wx, limits)
     : undefined;
+  // Drones with specs: wind limits depend on payload (spec interpolation + own speed).
+  const windLim = perf ? perf.windLimitSustained : limits.maxWindSpeed;
+  const gustLim = perf ? perf.windLimitGust : limits.maxWindGusts;
+  const atKg = perf ? ` @ ${perf.payloadKg} ${lang === 'uk' ? 'кг' : 'kg'}` : '';
 
   // --- NO_GO checks ---
-  if (wx.windSpeed > limits.maxWindSpeed) {
-    noGoReasons.push(tr.windExceedsLimit(wx.windSpeed.toFixed(1), limits.maxWindSpeed));
+  if (wx.windSpeed > windLim) {
+    noGoReasons.push(tr.windExceedsLimit(wx.windSpeed.toFixed(1), windLim) + atKg);
   }
-  if (wx.windGusts > limits.maxWindGusts) {
-    noGoReasons.push(tr.gustsExceedLimit(wx.windGusts.toFixed(1), limits.maxWindGusts));
+  if (wx.windGusts > gustLim) {
+    noGoReasons.push(tr.gustsExceedLimit(wx.windGusts.toFixed(1), gustLim) + atKg);
   }
   if (wx.temperature < limits.minTemperature) {
     noGoReasons.push(tr.tempBelowLimit(wx.temperature.toFixed(1), limits.minTemperature));
@@ -144,11 +148,11 @@ export function assess(drone: DroneProfile, wx: WeatherPoint, lang: Lang = 'uk',
 
   // --- CAUTION checks (only reported when there is no NO_GO) ---
   if (noGoReasons.length === 0) {
-    if (wx.windSpeed > limits.maxWindSpeed * 0.8) {
-      cautionReasons.push(tr.windApproachingLimit(wx.windSpeed.toFixed(1), limits.maxWindSpeed));
+    if (wx.windSpeed > windLim * 0.8) {
+      cautionReasons.push(tr.windApproachingLimit(wx.windSpeed.toFixed(1), windLim) + atKg);
     }
-    if (wx.windGusts > limits.maxWindGusts * 0.8) {
-      cautionReasons.push(tr.gustsApproachingLimit(wx.windGusts.toFixed(1), limits.maxWindGusts));
+    if (wx.windGusts > gustLim * 0.8) {
+      cautionReasons.push(tr.gustsApproachingLimit(wx.windGusts.toFixed(1), gustLim) + atKg);
     }
     if (wx.temperature < limits.minTemperature + 5) {
       cautionReasons.push(tr.tempNearMin(wx.temperature.toFixed(1), limits.minTemperature));
@@ -172,8 +176,8 @@ export function assess(drone: DroneProfile, wx: WeatherPoint, lang: Lang = 'uk',
     if (perf) {
       // Drone flies up to its ceiling: stronger wind aloft matters even if 10 m wind is fine.
       if (drone.performance!.ceilingM.min >= 80 && wx.windSpeed80 !== undefined
-          && wx.windSpeed80 > limits.maxWindSpeed) {
-        cautionReasons.push(tr.windAloftExceeds(wx.windSpeed80.toFixed(1), limits.maxWindSpeed));
+          && wx.windSpeed80 > windLim) {
+        cautionReasons.push(tr.windAloftExceeds(wx.windSpeed80.toFixed(1), windLim));
       }
       const cut = perf.radiusStillKm > 0 ? 1 - perf.radiusWindKm / perf.radiusStillKm : 0;
       if (cut > WIND_RADIUS_CAUTION) {

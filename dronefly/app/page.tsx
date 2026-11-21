@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, useDeferredValue } from 'react';
 import dynamic from 'next/dynamic';
 import { WeatherData, FlyabilityAssessment, HourlyAssessment, Location, DroneProfile } from '@/types';
-import { fetchWeather } from '@/lib/weather';
+import { useWeather } from '@/hooks/useWeather';
 import { DRONE_PROFILES } from '@/lib/droneProfiles';
 import { assess, findBestWindows } from '@/lib/assessment';
 import { defaultPayload } from '@/lib/performance';
@@ -24,7 +24,6 @@ import { SHOW_DONATIONS } from '@/lib/features';
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false });
 
 const DEFAULT_LOCATION: Location = { lat: 50.4501, lng: 30.5234, name: 'Київ, Україна' };
-const REFRESH_INTERVAL = 15 * 60 * 1000;
 const PAYLOAD_KEY = 'dronefly.payloads';
 
 function buildWeatherPoint(wx: WeatherData['current']) {
@@ -49,13 +48,9 @@ export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const { ready: userReady, prefs, locations, customDrones } = useUserData();
   const [location, setLocation] = useState<Location>(DEFAULT_LOCATION);
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { weather, loading, error, updatedAt: lastUpdated, stale } = useWeather(location.lat, location.lng);
   const [selectedDroneId, setSelectedDroneId] = useState(DRONE_PROFILES[0].id);
   const [forecastHourIndex, setForecastHourIndex] = useState<number | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Payload per drone (drones with detailed specs only), remembered on this device.
   // Lazy init is safe: payload only affects output after weather loads on the client.
@@ -75,40 +70,16 @@ export default function Home() {
     [payloads]
   );
 
-  const loadWeather = useCallback(async (lat: number, lng: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchWeather(lat, lng);
-      setWeather(data);
-      setLastUpdated(new Date());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch weather data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadWeather(location.lat, location.lng);
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => loadWeather(location.lat, location.lng), REFRESH_INTERVAL);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [location, loadWeather]);
-
   // Built-in profiles + the signed-in user's custom drones.
   const allProfiles: DroneProfile[] = useMemo(() => [...DRONE_PROFILES, ...customDrones], [customDrones]);
 
   // If the selected drone disappears (deleted custom drone / sign-out), fall back to the first one.
   // Wait while custom drones may still be loading, so a deep-linked custom drone isn't dropped.
   const profilesSettled = !authLoading && (!user || userReady);
-  useEffect(() => {
-    if (!profilesSettled) return;
-    if (!allProfiles.some(p => p.id === selectedDroneId)) {
-      setSelectedDroneId(allProfiles[0].id);
-      setForecastHourIndex(null);
-    }
-  }, [allProfiles, selectedDroneId, profilesSettled]);
+  // Derived (not stored): the selection itself is kept so it comes back if the drone reappears.
+  const effectiveDroneId = !profilesSettled || allProfiles.some(p => p.id === selectedDroneId)
+    ? selectedDroneId
+    : allProfiles[0].id;
 
   // Deep link from the profile page: /?lat=..&lng=..&name=..  or  /?drone=<id>
   const deepLinked = useRef(false);
@@ -118,6 +89,8 @@ export default function Home() {
     const lng = Number(params.get('lng'));
     if (params.has('lat') && params.has('lng') && Number.isFinite(lat) && Number.isFinite(lng)
         && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      // Reading the URL once on mount is syncing with an external system.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocation({ lat, lng, name: params.get('name')?.slice(0, 60) || `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
       deepLinked.current = true;
     }
@@ -137,6 +110,8 @@ export default function Home() {
     defaultsApplied.current = true;
     if (deepLinked.current) return;
     const loc = locations.find(l => l.id === prefs.defaultLocationId);
+    // Applying remote defaults once when the user's data arrives (external store).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (loc) setLocation({ lat: loc.lat, lng: loc.lng, name: loc.name });
     if (prefs.defaultDroneId && allProfiles.some(p => p.id === prefs.defaultDroneId)) {
       setSelectedDroneId(prefs.defaultDroneId);
@@ -155,76 +130,71 @@ export default function Home() {
     );
   }, [lang]);
 
-  // Find the index of the current hour so the timeline starts from now, not midnight.
-  // Open-Meteo returns local-time strings (timezone: auto), so compare using local clock.
-  const currentHourStart = weather
-    ? (() => {
-        const now = new Date();
-        const pad = (n: number) => String(n).padStart(2, '0');
-        // Build "YYYY-MM-DDTHH:00" in local time to match Open-Meteo's format
-        const localNow =
-          `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
-          `T${pad(now.getHours())}:00`;
-        const idx = weather.hourly.time.findIndex(t => t >= localNow);
-        return idx >= 0 ? idx : 0;
-      })()
-    : 0;
+  // Ratings are recomputed only when their inputs change. The payload slider updates
+  // `payloads` on every tick; deferring it keeps dragging smooth.
+  const deferredPayloads = useDeferredValue(payloads);
 
-  const currentAssessments: FlyabilityAssessment[] = weather
-    ? allProfiles.map(drone => assess(
-        drone,
-        // `current` has no 80 m wind; use the current hour's forecast value.
-        { ...buildWeatherPoint(weather.current), windSpeed80: weather.hourly.wind_speed_80m?.[currentHourStart] },
-        lang,
-        { payloadKg: payloadFor(drone) }
-      ))
-    : [];
+  const currentAssessments: FlyabilityAssessment[] = useMemo(() => {
+    if (!weather) return [];
+    const pf = (d: DroneProfile) => d.performance
+      ? Math.min(deferredPayloads[d.id] ?? defaultPayload(d.performance), d.performance.maxPayloadKg) : undefined;
+    return allProfiles.map(drone => assess(
+      drone,
+      // `current` has no 80 m wind; use the current hour's value (hourly starts at the current hour).
+      { ...buildWeatherPoint(weather.current), windSpeed80: weather.hourly.wind_speed_80m?.[0] },
+      lang,
+      { payloadKg: pf(drone) }
+    ));
+  }, [weather, allProfiles, lang, deferredPayloads]);
 
-  const hourlyAssessments: HourlyAssessment[][] = weather
-    ? allProfiles.map(drone =>
-        weather.hourly.time.slice(currentHourStart, currentHourStart + 48).map((time, i) => {
-          const ri = currentHourStart + i; // real index into the full arrays
-          return ({
-          time,
-          assessment: assess(drone, {
-            temperature: weather.hourly.temperature_2m[ri],
-            humidity: weather.hourly.relative_humidity_2m[ri],
-            dewPoint: weather.hourly.dew_point_2m[ri],
-            precipitation: weather.hourly.precipitation[ri],
-            rain: weather.hourly.rain[ri],
-            snowfall: weather.hourly.snowfall[ri],
-            cloudCover: weather.hourly.cloud_cover[ri],
-            visibility: weather.hourly.visibility[ri],
-            windSpeed: weather.hourly.wind_speed_10m[ri],
-            windGusts: weather.hourly.wind_gusts_10m[ri],
-            windDirection: weather.hourly.wind_direction_10m[ri],
-            weatherCode: weather.hourly.weather_code[ri],
-            windSpeed80: weather.hourly.wind_speed_80m?.[ri],
-          }, lang, { payloadKg: payloadFor(drone) }),
-          weather: {
-            temperature: weather.hourly.temperature_2m[ri],
-            windSpeed: weather.hourly.wind_speed_10m[ri],
-            windGusts: weather.hourly.wind_gusts_10m[ri],
-            windDirection: weather.hourly.wind_direction_10m[ri],
-            precipitation: weather.hourly.precipitation[ri],
-            snowfall: weather.hourly.snowfall[ri],
-            visibility: weather.hourly.visibility[ri],
-            cloudCover: weather.hourly.cloud_cover[ri],
-            humidity: weather.hourly.relative_humidity_2m[ri],
-            dewPoint: weather.hourly.dew_point_2m[ri],
-            weatherCode: weather.hourly.weather_code[ri],
-          },
-        });
-        })
-      )
-    : [];
+  // `forecast_hours=48` returns exactly 48 hours starting at the location's current hour
+  // (in the location's timezone), so no browser-clock slicing is needed.
+  const hourlyAssessments: HourlyAssessment[][] = useMemo(() => {
+    if (!weather) return [];
+    const h = weather.hourly;
+    const pf = (d: DroneProfile) => d.performance
+      ? Math.min(deferredPayloads[d.id] ?? defaultPayload(d.performance), d.performance.maxPayloadKg) : undefined;
+    return allProfiles.map(drone =>
+      h.time.map((time, i) => ({
+        time,
+        assessment: assess(drone, {
+          temperature: h.temperature_2m[i],
+          humidity: h.relative_humidity_2m[i],
+          dewPoint: h.dew_point_2m[i],
+          precipitation: h.precipitation[i],
+          rain: h.rain[i],
+          snowfall: h.snowfall[i],
+          cloudCover: h.cloud_cover[i],
+          visibility: h.visibility[i],
+          windSpeed: h.wind_speed_10m[i],
+          windGusts: h.wind_gusts_10m[i],
+          windDirection: h.wind_direction_10m[i],
+          weatherCode: h.weather_code[i],
+          windSpeed80: h.wind_speed_80m?.[i],
+        }, lang, { payloadKg: pf(drone) }),
+        weather: {
+          temperature: h.temperature_2m[i],
+          windSpeed: h.wind_speed_10m[i],
+          windGusts: h.wind_gusts_10m[i],
+          windDirection: h.wind_direction_10m[i],
+          precipitation: h.precipitation[i],
+          snowfall: h.snowfall[i],
+          visibility: h.visibility[i],
+          cloudCover: h.cloud_cover[i],
+          humidity: h.relative_humidity_2m[i],
+          dewPoint: h.dew_point_2m[i],
+          weatherCode: h.weather_code[i],
+        },
+      }))
+    );
+  }, [weather, allProfiles, lang, deferredPayloads]);
 
   const handleDroneSelect = useCallback((id: string) => {
     setSelectedDroneId(id);
     setForecastHourIndex(null);
   }, []);
 
-  const selectedDroneIndex = allProfiles.findIndex(p => p.id === selectedDroneId);
+  const selectedDroneIndex = allProfiles.findIndex(p => p.id === effectiveDroneId);
   const selectedDrone = allProfiles[selectedDroneIndex];
   const selectedAssessment = currentAssessments[selectedDroneIndex];
   const selectedHourly = hourlyAssessments[selectedDroneIndex] ?? [];
@@ -264,7 +234,8 @@ export default function Home() {
 
         {lastUpdated && (
           <span className="text-xs ml-1" style={{ color: '#2d4060', fontFamily: 'var(--font-jetbrains)' }}>
-            {tr.updated} {lastUpdated.toLocaleTimeString(lang === 'uk' ? 'uk-UA' : 'en-GB')}
+            {tr.updated} {lastUpdated.toLocaleTimeString(lang === 'uk' ? 'uk-UA' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}
+            {stale && <span className="ml-1 text-[#ffaa00]" title={tr.cachedHint}>· {tr.cached}</span>}
           </span>
         )}
 
@@ -325,7 +296,7 @@ export default function Home() {
             <DroneCards
               profiles={allProfiles}
               assessments={currentAssessments}
-              selectedId={selectedDroneId}
+              selectedId={effectiveDroneId}
               onSelect={handleDroneSelect}
             />
           </section>
@@ -360,7 +331,7 @@ export default function Home() {
             <Timeline
               profiles={allProfiles}
               hourlyData={hourlyAssessments}
-              selectedDroneId={selectedDroneId}
+              selectedDroneId={effectiveDroneId}
               onDroneSelect={handleDroneSelect}
               selectedHour={forecastHourIndex}
               onHourSelect={setForecastHourIndex}

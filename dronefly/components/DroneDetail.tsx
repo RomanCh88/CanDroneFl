@@ -240,8 +240,8 @@ export default function DroneDetail({ drone, assessment: a, windSpeed, windDirec
               <div className="text-[#4a6080] text-xs mb-2">{tr.enduranceAdj} <span className="text-[#00b4d8]">{a.adjustedEndurance} min</span> <span className="text-[#4a6080]">({tr.nom} {drone.nominalEndurance} min)</span></div>
             </div>
             <div className="text-[#4a6080] text-xs font-mono mt-1 space-y-0.5">
-              <div className="flex justify-between"><span>{tr.maxWind}</span><span className="text-[#c8d0e0]">{drone.limits.maxWindSpeed} m/s</span></div>
-              <div className="flex justify-between"><span>{tr.maxGusts}</span><span className="text-[#c8d0e0]">{drone.limits.maxWindGusts} m/s</span></div>
+              <div className="flex justify-between"><span>{tr.maxWind}{perf && ` @ ${perf.payloadKg}`}</span><span className="text-[#c8d0e0]">{perf ? perf.windLimitSustained : drone.limits.maxWindSpeed} m/s</span></div>
+              <div className="flex justify-between"><span>{tr.maxGusts}{perf && ` @ ${perf.payloadKg}`}</span><span className="text-[#c8d0e0]">{perf ? perf.windLimitGust : drone.limits.maxWindGusts} m/s</span></div>
               <div className="flex justify-between"><span>{tr.tempRange}</span><span className="text-[#c8d0e0]">{drone.limits.minTemperature}°C – {drone.limits.maxTemperature}°C</span></div>
               <div className="flex justify-between"><span>{tr.maxPrecip}</span><span className="text-[#c8d0e0]">{drone.limits.maxPrecipitation} mm/h</span></div>
               <div className="flex justify-between"><span>{tr.maxSnow}</span><span className="text-[#c8d0e0]">{drone.limits.maxSnowfall} cm/h</span></div>
@@ -265,6 +265,10 @@ export default function DroneDetail({ drone, assessment: a, windSpeed, windDirec
             <PerfRow label={tr.perfRadiusStill} value={`${perf.radiusStillKm} ${kmU}`} />
             <PerfRow label={tr.perfRadiusWind} value={`${perf.radiusWindKm} ${kmU}`} strong
               color={perf.windRatio >= NO_RETURN_RATIO ? '#ff3344' : perf.radiusWindKm < perf.radiusStillKm * 0.7 ? '#ffaa00' : '#00ff88'} />
+            <PerfRow label={tr.perfWindLimit} value={`${perf.windLimitSustained} ${msU}`} strong
+              sub={perf.windLimitBy === 'speed' ? tr.limitBySpeed : tr.limitBySpec}
+              color={perf.windLimitBy === 'speed' ? '#ffaa00' : '#c8d0e0'} />
+            <PerfRow label={tr.perfGustLimit} value={`${perf.windLimitGust} ${msU}`} />
             <PerfRow label={tr.perfWindUsed} value={`${perf.windMs} ${msU}`} />
             <PerfRow label={tr.perfWindRatio} value={`${Math.round(perf.windRatio * 100)}%`}
               color={perf.windRatio >= NO_RETURN_RATIO ? '#ff3344' : perf.windRatio >= 0.55 ? '#ffaa00' : '#00ff88'} />

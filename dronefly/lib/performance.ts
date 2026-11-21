@@ -12,6 +12,9 @@
 //    flight time the radius factor is (s² − a²) / (v·s). Worst case (pure along-wind) = 1 − (w/v)²,
 //    pure crosswind = √(1 − (w/v)²). Head- vs tailwind outbound give the same round trip.
 //  - Wind used = max(10 m wind, 80 m wind): the drone operates up to its ceiling.
+//  - Wind limits at payload p: spec(p) = wind resistance interpolated empty → full payload.
+//      sustained = min(spec(p), 85 % of airspeed)   (must be able to fly back)
+//      gusts     = min(1.25 × spec(p), airspeed)     (brief, but never faster than the drone)
 
 import { DronePerformance, PerformanceResult, SpecRange } from '@/types';
 
@@ -19,6 +22,8 @@ import { DronePerformance, PerformanceResult, SpecRange } from '@/types';
 export const NO_RETURN_RATIO = 0.85;
 /** Radius cut by wind beyond this share → CAUTION. */
 export const WIND_RADIUS_CAUTION = 0.3;
+/** Gusts may briefly exceed the sustained spec by this factor (never beyond airspeed). */
+export const GUST_FACTOR = 1.25;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const round1 = (v: number) => Math.round(v * 10) / 10;
@@ -48,10 +53,19 @@ export function roundTripFactor(headingDeg: number, windFromDeg: number, windMs:
   return clamp((s * s - along * along) / (airspeedMs * s), 0, 1);
 }
 
+/** Wind resistance from the spec at payload fraction t (0 = empty, 1 = full). */
+export function specWindAt(perf: DronePerformance, t: number, fallback: { sustained: number; gusts: number }): number {
+  // Older records stored "12–17" as sustained/gusts; the spec meaning is 17 empty → 12 full.
+  const empty = perf.windEmptyMs ?? fallback.gusts;
+  const full = perf.windFullMs ?? fallback.sustained;
+  return lerp(empty, full, clamp(t, 0, 1));
+}
+
 export function computePerformance(
   perf: DronePerformance,
   payloadKg: number,
-  wx: { temperature: number; windSpeed: number; windSpeed80?: number }
+  wx: { temperature: number; windSpeed: number; windSpeed80?: number },
+  limitsFallback: { maxWindSpeed: number; maxWindGusts: number } = { maxWindSpeed: Infinity, maxWindGusts: Infinity }
 ): PerformanceResult {
   const p = clamp(payloadKg, 0, perf.maxPayloadKg);
   const tFull = perf.maxPayloadKg > 0 ? p / perf.maxPayloadKg : 0;
@@ -80,6 +94,11 @@ export function computePerformance(
   const worst = windRatio >= 1 ? 0 : 1 - windRatio * windRatio;
   const radiusWindKm = radiusStillKm * worst;
 
+  const spec = specWindAt(perf, tFull, { sustained: limitsFallback.maxWindSpeed, gusts: limitsFallback.maxWindGusts });
+  const speedCap = NO_RETURN_RATIO * airspeedMs;
+  const windLimitSustained = Math.min(spec, speedCap);
+  const windLimitGust = Math.max(windLimitSustained, Math.min(spec * GUST_FACTOR, airspeedMs));
+
   return {
     payloadKg: p,
     enduranceNominal: { min: Math.round(enduranceNominal.min), max: Math.round(enduranceNominal.max) },
@@ -92,6 +111,10 @@ export function computePerformance(
     radiusWindKm: round1(radiusWindKm),
     limitedByRange,
     windRatio: Math.round(windRatio * 100) / 100,
+    windLimitSustained: round1(windLimitSustained),
+    windLimitGust: round1(windLimitGust),
+    windLimitBy: speedCap < spec ? 'speed' : 'spec',
+    totalWeightKg: perf.emptyWeightKg !== undefined ? round1(perf.emptyWeightKg + p) : undefined,
   };
 }
 

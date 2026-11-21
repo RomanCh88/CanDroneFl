@@ -69,7 +69,7 @@ service cloud.firestore {
       return p is map
         && p.keys().hasOnly(['maxPayloadKg', 'enduranceEmptyMin', 'enduranceLoadedMin', 'loadedPayloadKg',
                              'speedEmptyKmh', 'speedFullKmh', 'radiusEmptyKm', 'radiusFullKm',
-                             'maxRangeKm', 'ceilingM'])
+                             'maxRangeKm', 'ceilingM', 'emptyWeightKg', 'windEmptyMs', 'windFullMs'])
         && num(p.maxPayloadKg, 0.1, 500)
         && specRange(p.enduranceEmptyMin, 1, 3000)
         && specRange(p.enduranceLoadedMin, 1, 3000)
@@ -80,7 +80,11 @@ service cloud.firestore {
         && num(p.radiusEmptyKm, 0.1, 2000)
         && num(p.radiusFullKm, 0.1, 2000)
         && num(p.maxRangeKm, 0.1, 2000)
-        && specRange(p.ceilingM, 1, 10000);
+        && specRange(p.ceilingM, 1, 10000)
+        && (!('emptyWeightKg' in p) || num(p.emptyWeightKg, 0.05, 1000))
+        && (!('windEmptyMs' in p) || num(p.windEmptyMs, 0, 60))
+        && (!('windFullMs' in p) || num(p.windFullMs, 0, 60))
+        && (!('windEmptyMs' in p) || !('windFullMs' in p) || p.windFullMs <= p.windEmptyMs);
     }
 
     function validDrone(d) {

@@ -140,8 +140,8 @@ export const EXAMPLE_SPEC_DRONE: Omit<DroneProfile, 'id'> = {
   type: 'multirotor',
   description: '',
   limits: {
-    maxWindSpeed: 12,
-    maxWindGusts: 17,
+    maxWindSpeed: 17,
+    maxWindGusts: 21.3,
     minTemperature: -20,
     maxTemperature: 45,
     maxPrecipitation: 2.5,
@@ -166,5 +166,7 @@ export const EXAMPLE_SPEC_DRONE: Omit<DroneProfile, 'id'> = {
     radiusFullKm: 10,
     maxRangeKm: 20,
     ceilingM: { min: 400, max: 500 },
+    windEmptyMs: 17,
+    windFullMs: 12,
   },
 };

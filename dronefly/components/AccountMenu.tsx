@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -8,6 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 export default function AccountMenu() {
   const { enabled, user, loading, error, signInWithGoogle } = useAuth();
   const { tr } = useLanguage();
+  const pathname = usePathname();
 
   if (!enabled || loading) return null;
 
@@ -31,6 +33,15 @@ export default function AccountMenu() {
 
   const label = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || tr.profile;
   return (
+    <div className="flex items-center gap-2">
+    {pathname !== '/mission' && (
+      <Link
+        href="/mission"
+        className="border border-[#00b4d8] text-[#00b4d8] px-2 py-1 text-xs font-mono tracking-wider hover:bg-[#00b4d8] hover:text-black transition-colors"
+      >
+        ◎ {tr.mission}
+      </Link>
+    )}
     <Link
       href="/profile"
       className="flex items-center gap-2 border border-[#1e2d45] px-2 py-1 text-xs font-mono text-[#c8d0e0] hover:border-[#00b4d8] transition-colors"
@@ -44,5 +55,6 @@ export default function AccountMenu() {
       )}
       <span className="max-w-[100px] truncate uppercase">{label}</span>
     </Link>
+    </div>
   );
 }

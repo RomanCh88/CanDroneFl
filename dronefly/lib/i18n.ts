@@ -243,6 +243,98 @@ export type Translations = {
   roundTripTitle: string;
   roundTripNote: string;
   cannotReturn: string;
+  cached: string;
+  specEmptyWeight: string;
+  specEmptyWeightNote: string;
+  specWindNote: string;
+  totalWeight: string;
+  payloadShort: string;
+  perfWindLimit: string;
+  perfGustLimit: string;
+  limitBySpeed: string;
+  limitBySpec: string;
+  mission: string;
+  missionTitle: string;
+  missionSignIn: string;
+  missions: string;
+  newMission: string;
+  missionDefaultName: (n: number) => string;
+  missionName: string;
+  rememberOnDevice: string;
+  rememberHint: string;
+  clearAll: string;
+  droneLabel: string;
+  noSpecsWarning: string;
+  missionMode: string;
+  modeOneway: string;
+  modeReturn: string;
+  airspeed: string;
+  auto: string;
+  autoHint: string;
+  altitude: string;
+  altitudeHint: (c: number) => string;
+  reserve: string;
+  departure: string;
+  nowLabel: string;
+  route: string;
+  clickSets: string;
+  setA: string;
+  setB: string;
+  addWaypoint: string;
+  pointA: string;
+  pointB: string;
+  waypointN: (n: number) => string;
+  coordsPlaceholder: string;
+  fromSaved: string;
+  reverseRoute: string;
+  clearRoute: string;
+  routeHint: string;
+  results: string;
+  feasible: string;
+  notFeasible: string;
+  needTwoPoints: string;
+  loadingRouteWx: string;
+  reasonBattery: (m: string) => string;
+  reasonLink: (d: string, l: number) => string;
+  reasonLeg: string;
+  reasonWind: (w: string, l: number) => string;
+  distance: string;
+  flightTime: string;
+  usableTime: string;
+  margin: string;
+  batteryUsed: string;
+  maxFromLaunch: string;
+  turnBack: string;
+  turnBackHint: (km: string) => string;
+  batteryLimit: string;
+  batteryLimitHint: (km: string) => string;
+  reachOneway: string;
+  reachReturn: string;
+  reachRange: (a: string, b: string) => string;
+  specRadiusCompare: (km: number) => string;
+  weatherAt: (p: string) => string;
+  legs: string;
+  colTrack: string;
+  colWind: string;
+  colGround: string;
+  colTime: string;
+  headwindShort: string;
+  tailwindShort: string;
+  returnLeg: string;
+  exportTitle: string;
+  exportPng: string;
+  exportHint: string;
+  exporting: string;
+  exportFailed: string;
+  legendRoute: string;
+  legendReturnArea: string;
+  legendOnewayArea: string;
+  legendLink: string;
+  opsecNote: string;
+  windAtAlt: (alt: number) => string;
+  deleteMission: string;
+  generatedBy: string;
+  cachedHint: string;
 };
 
 const uk: Translations = {
@@ -470,6 +562,98 @@ const uk: Translations = {
   roundTripTitle: 'РАДІУС ТУДИ-НАЗАД ЗА НАПРЯМКОМ',
   roundTripNote: 'Для польоту туди-назад зустрічний і попутний вітер дають однаковий результат — найгірше летіти вздовж вітру, найкраще поперек.',
   cannotReturn: 'НЕМАЄ ПОВЕРНЕННЯ',
+  cached: 'КЕШ',
+  specEmptyWeight: 'Маса без вантажу',
+  specEmptyWeightNote: 'злітна маса = маса без вантажу + вантаж (з АКБ)',
+  specWindNote: 'ліміт вітру зменшується з вантажем і не перевищує 85% швидкості БПЛА',
+  totalWeight: 'ЗЛІТНА МАСА',
+  payloadShort: 'вантаж',
+  perfWindLimit: 'Ліміт вітру при цьому вантажі',
+  perfGustLimit: 'Ліміт поривів при цьому вантажі',
+  limitBySpeed: 'обмежено швидкістю БПЛА',
+  limitBySpec: 'за ТТХ',
+  mission: 'МІСІЯ',
+  missionTitle: '// ПЛАНУВАННЯ МІСІЇ',
+  missionSignIn: 'Планувальник місій доступний після входу',
+  missions: 'МІСІЇ',
+  newMission: '+ НОВА',
+  missionDefaultName: (n) => `Місія ${n}`,
+  missionName: 'Назва місії',
+  rememberOnDevice: 'Зберігати на цьому пристрої',
+  rememberHint: 'Вимкнено: місії зникнуть після закриття вкладки. У нашу базу даних місії не потрапляють ніколи.',
+  clearAll: 'ОЧИСТИТИ ВСЕ',
+  droneLabel: 'БПЛА',
+  noSpecsWarning: 'У цього БПЛА немає детальних ТТХ — розрахунок приблизний (типова швидкість для типу). Додайте ТТХ у профілі.',
+  missionMode: 'Тип місії',
+  modeOneway: 'В ОДИН БІК',
+  modeReturn: 'З ПОВЕРНЕННЯМ',
+  airspeed: 'Швидкість польоту',
+  auto: 'АВТО',
+  autoHint: 'Авто — швидкість з найбільшим запасом для цього маршруту і вітру',
+  altitude: 'Висота польоту',
+  altitudeHint: (c) => `Вітер береться на цій висоті (стеля ${c} м)`,
+  reserve: 'Резерв батареї',
+  departure: 'Час вильоту',
+  nowLabel: 'зараз',
+  route: 'МАРШРУТ',
+  clickSets: 'Клік на карті:',
+  setA: 'А — старт',
+  setB: 'Б — ціль',
+  addWaypoint: '+ точка',
+  pointA: 'А',
+  pointB: 'Б',
+  waypointN: (n) => `Т${n}`,
+  coordsPlaceholder: 'широта, довгота',
+  fromSaved: '★ збережені',
+  reverseRoute: '⇄ РОЗВЕРНУТИ',
+  clearRoute: 'ОЧИСТИТИ',
+  routeHint: 'Перетягуйте точки на карті. Координати можна вставити вручну.',
+  results: 'РЕЗУЛЬТАТ',
+  feasible: 'ВИКОНУВАНА',
+  notFeasible: 'НЕ ВИКОНУВАНА',
+  needTwoPoints: 'Поставте точки А і Б на карті',
+  loadingRouteWx: 'Завантаження погоди вздовж маршруту…',
+  reasonBattery: (m) => `Не вистачає батареї: −${m} хв`,
+  reasonLink: (d, l) => `Точка ${d} км від старту — далі за дальність ${l} км`,
+  reasonLeg: 'Вітер сильніший за швидкість — відрізок неможливий',
+  reasonWind: (w, l) => `Вітер на маршруті ${w} м/с вище ліміту ${l} м/с`,
+  distance: 'Відстань',
+  flightTime: 'Час польоту',
+  usableTime: 'Доступний час (мінус резерв)',
+  margin: 'Запас',
+  batteryUsed: 'Використано батареї',
+  maxFromLaunch: 'Макс. відстань від старту',
+  turnBack: 'Точка повернення',
+  turnBackHint: (km) => `Далі ${km} км по маршруту повернутися не вийде`,
+  batteryLimit: 'Межа батареї',
+  batteryLimitHint: (km) => `Батарея закінчиться через ${km} км по маршруту`,
+  reachOneway: 'Досяжність в один бік',
+  reachReturn: 'Радіус з поверненням',
+  reachRange: (a, b) => `${a}–${b} км залежно від напрямку`,
+  specRadiusCompare: (km) => `Радіус за ТТХ при цьому вантажі: ${km} км (без резерву і вітру)`,
+  weatherAt: (p) => `Погода: ${p}`,
+  legs: 'ВІДРІЗКИ',
+  colTrack: 'Курс',
+  colWind: 'Вітер',
+  colGround: 'Шлях. шв.',
+  colTime: 'Час',
+  headwindShort: 'зустр.',
+  tailwindShort: 'попут.',
+  returnLeg: 'назад',
+  exportTitle: 'ЕКСПОРТ',
+  exportPng: 'ЗНІМОК PNG',
+  exportHint: 'GPX / KML — для карт і наземних станцій, CSV — таблиця відрізків, JSON — усі дані.',
+  exporting: 'ГОТУЄМО…',
+  exportFailed: 'Не вдалося створити знімок',
+  legendRoute: 'Маршрут',
+  legendReturnArea: 'Зона з поверненням',
+  legendOnewayArea: 'Зона в один бік',
+  legendLink: 'Макс. дальність',
+  opsecNote: 'Місії зберігаються лише у вашому браузері. Для погоди Open-Meteo отримує координати, округлені до ~1 км.',
+  windAtAlt: (alt) => `вітер на ${alt} м`,
+  deleteMission: 'ВИДАЛИТИ МІСІЮ',
+  generatedBy: 'Згенеровано DroneFly — лише оцінка, застосовуйте оперативне судження',
+  cachedHint: 'Показано останній збережений прогноз, оновлення триває',
 };
 
 const en: Translations = {
@@ -697,6 +881,98 @@ const en: Translations = {
   roundTripTitle: 'OUT-AND-BACK RADIUS BY HEADING',
   roundTripNote: 'For an out-and-back flight head- and tailwind give the same result — flying along the wind is worst, across it is best.',
   cannotReturn: 'NO RETURN',
+  cached: 'CACHED',
+  specEmptyWeight: 'Weight without payload',
+  specEmptyWeightNote: 'take-off weight = weight without payload + payload (incl. battery)',
+  specWindNote: 'the wind limit drops with payload and never exceeds 85% of drone speed',
+  totalWeight: 'TAKE-OFF WEIGHT',
+  payloadShort: 'payload',
+  perfWindLimit: 'Wind limit at this payload',
+  perfGustLimit: 'Gust limit at this payload',
+  limitBySpeed: 'set by drone speed',
+  limitBySpec: 'per specs',
+  mission: 'MISSION',
+  missionTitle: '// MISSION PLANNER',
+  missionSignIn: 'The mission planner is available after signing in',
+  missions: 'MISSIONS',
+  newMission: '+ NEW',
+  missionDefaultName: (n) => `Mission ${n}`,
+  missionName: 'Mission name',
+  rememberOnDevice: 'Remember on this device',
+  rememberHint: 'Off: missions disappear when the tab is closed. Missions are never sent to our database.',
+  clearAll: 'CLEAR ALL',
+  droneLabel: 'Drone',
+  noSpecsWarning: 'This drone has no detailed specs — the result is a rough estimate (typical speed for its type). Add specs in your profile.',
+  missionMode: 'Mission type',
+  modeOneway: 'ONE-WAY',
+  modeReturn: 'RETURN',
+  airspeed: 'Airspeed',
+  auto: 'AUTO',
+  autoHint: 'Auto — the speed with the largest margin for this route and wind',
+  altitude: 'Flight altitude',
+  altitudeHint: (c) => `Wind is taken at this altitude (ceiling ${c} m)`,
+  reserve: 'Battery reserve',
+  departure: 'Departure time',
+  nowLabel: 'now',
+  route: 'ROUTE',
+  clickSets: 'Click on map:',
+  setA: 'A — launch',
+  setB: 'B — target',
+  addWaypoint: '+ waypoint',
+  pointA: 'A',
+  pointB: 'B',
+  waypointN: (n) => `WP${n}`,
+  coordsPlaceholder: 'lat, lng',
+  fromSaved: '★ saved',
+  reverseRoute: '⇄ REVERSE',
+  clearRoute: 'CLEAR',
+  routeHint: 'Drag points on the map. Coordinates can be pasted manually.',
+  results: 'RESULT',
+  feasible: 'FEASIBLE',
+  notFeasible: 'NOT FEASIBLE',
+  needTwoPoints: 'Place points A and B on the map',
+  loadingRouteWx: 'Loading weather along the route…',
+  reasonBattery: (m) => `Not enough battery: −${m} min`,
+  reasonLink: (d, l) => `A point is ${d} km from launch — beyond the ${l} km range`,
+  reasonLeg: 'Wind stronger than airspeed — a leg is impossible',
+  reasonWind: (w, l) => `Wind on the route ${w} m/s above the ${l} m/s limit`,
+  distance: 'Distance',
+  flightTime: 'Flight time',
+  usableTime: 'Usable time (minus reserve)',
+  margin: 'Margin',
+  batteryUsed: 'Battery used',
+  maxFromLaunch: 'Max distance from launch',
+  turnBack: 'Turn-back point',
+  turnBackHint: (km) => `Beyond ${km} km along the route the drone cannot get back`,
+  batteryLimit: 'Battery limit',
+  batteryLimitHint: (km) => `The battery runs out ${km} km along the route`,
+  reachOneway: 'One-way reach',
+  reachReturn: 'Return radius',
+  reachRange: (a, b) => `${a}–${b} km depending on heading`,
+  specRadiusCompare: (km) => `Spec radius at this payload: ${km} km (no reserve, no wind)`,
+  weatherAt: (p) => `Weather: ${p}`,
+  legs: 'LEGS',
+  colTrack: 'Track',
+  colWind: 'Wind',
+  colGround: 'Ground',
+  colTime: 'Time',
+  headwindShort: 'head',
+  tailwindShort: 'tail',
+  returnLeg: 'back',
+  exportTitle: 'EXPORT',
+  exportPng: 'IMAGE PNG',
+  exportHint: 'GPX / KML — for maps and ground stations, CSV — legs table, JSON — all data.',
+  exporting: 'PREPARING…',
+  exportFailed: 'Could not create the image',
+  legendRoute: 'Route',
+  legendReturnArea: 'Return area',
+  legendOnewayArea: 'One-way area',
+  legendLink: 'Max range',
+  opsecNote: 'Missions are kept only in your browser. For weather, Open-Meteo receives coordinates rounded to ~1 km.',
+  windAtAlt: (alt) => `wind at ${alt} m`,
+  deleteMission: 'DELETE MISSION',
+  generatedBy: 'Generated by DroneFly — estimate only, apply operational judgment',
+  cachedHint: 'Showing the last saved forecast while refreshing',
 };
 
 const translations: Record<Lang, Translations> = { uk, en };
