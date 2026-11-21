@@ -131,8 +131,9 @@ export default function MissionPlanner() {
     const legWinds: Wind[] = [];
     for (let i = 0; i < Math.max(0, points.length - 1); i++) {
       const idx = samples.map((s, k) => (s.leg === i ? k : -1)).filter(k => k >= 0);
-      const end = samples.findIndex((s, k) => k > idx[idx.length - 1]);
-      const used = end >= 0 ? [...idx, end] : idx;
+      // Include the first sample of the next leg (= this leg's end point) when there is one.
+      const next = idx[idx.length - 1] + 1;
+      const used = next < samples.length ? [...idx, next] : idx;
       legWinds.push(averageWind(used.map(k => windAt(weather[k], h, altitudeM))));
     }
 

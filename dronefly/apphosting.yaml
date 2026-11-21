@@ -8,9 +8,9 @@ runConfig:
   # memoryMiB: 512
 
 # Environment variables and secrets.
-# Firebase web config for sign-in. NEXT_PUBLIC_* are inlined at BUILD time, so BUILD is required.
-# These values are public by design (security = Auth + firestore.rules).
 env:
+  # Firebase web config for sign-in. NEXT_PUBLIC_* are inlined at BUILD time, so BUILD is required.
+  # These values are public by design (security = Auth + firestore.rules).
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: "AIzaSyAo1k1LNbT3jVxRlAZLDufRikUHIDFfKsI"
     availability: [BUILD, RUNTIME]
@@ -30,40 +30,20 @@ env:
     value: "1:228737059549:web:882f219938334916822934"
     availability: [BUILD, RUNTIME]
 
-  # --- Invite-only access (server-only, RUNTIME) ---
-  # Create the secrets FIRST, then uncomment (a missing secret fails the rollout):
-  #   npx firebase-tools apphosting:secrets:set adminEmail      # your private admin address
-  #   npx firebase-tools apphosting:secrets:set approvalSecret  # 48 random bytes, base64url
-  #   npx firebase-tools apphosting:secrets:set resendApiKey    # from resend.com
-  # (each command offers to grant the backend access — answer yes)
-  # - variable: ADMIN_EMAIL
-  #   secret: adminEmail
-  #   availability: [RUNTIME]
-  # - variable: APPROVAL_SECRET
-  #   secret: approvalSecret
-  #   availability: [RUNTIME]
-  # - variable: RESEND_API_KEY
-  #   secret: resendApiKey
-  #   availability: [RUNTIME]
-  # - variable: EMAIL_FROM
-  #   value: "DroneFly <noreply@candronefly.org>"
-  #   availability: [RUNTIME]
-  # - variable: APP_URL
-  #   value: "https://candronefly.org"
-  #   availability: [RUNTIME]
-
-# (original template below)
-# env:
-  # Configure environment variables.
-  # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
-  # - variable: MESSAGE
-  #   value: Hello world!
-  #   availability:
-  #     - BUILD
-  #     - RUNTIME
-
-  # Grant access to secrets in Cloud Secret Manager.
-  # You can create secrets with the CLI command `firebase apphosting:secrets:set <secretName>`.
-  # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
-  # - variable: MY_SECRET
-  #   secret: mySecretRef
+  # Invite-only access — server-side only (RUNTIME, never sent to the browser).
+  # Values live in Cloud Secret Manager (set with `firebase apphosting:secrets:set <name>`);
+  # only the secret NAMES are in this file.
+  - variable: ADMIN_EMAIL
+    secret: adminEmail
+    availability: [RUNTIME]
+  - variable: APPROVAL_SECRET
+    secret: approvalSecret
+    availability: [RUNTIME]
+  - variable: RESEND_API_KEY
+    secret: resendApiKey
+    availability: [RUNTIME]
+  - variable: EMAIL_FROM
+    value: "DroneFly <noreply@candronefly.org>"
+    availability: [RUNTIME]
+  # APP_URL (optional): base URL for links in emails. Unset = the host the request came from,
+  # which works for both the hosted.app address and a custom domain.
