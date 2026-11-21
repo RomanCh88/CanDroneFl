@@ -7,7 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 /** Header account control. Renders nothing when Firebase isn't configured. */
 export default function AccountMenu() {
-  const { enabled, user, loading, error, signInWithGoogle } = useAuth();
+  const { enabled, user, loading, member, error, signInWithGoogle } = useAuth();
   const { tr } = useLanguage();
   const pathname = usePathname();
 
@@ -34,7 +34,12 @@ export default function AccountMenu() {
   const label = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || tr.profile;
   return (
     <div className="flex items-center gap-2">
-    {pathname !== '/mission' && (
+    {member === false && (
+      <Link href="/profile" className="border border-[#ffaa00]/60 text-[#ffaa00] px-2 py-1 text-[10px] font-mono tracking-wider hover:border-[#ffaa00]">
+        ◈ {tr.inviteOnlyBadge}
+      </Link>
+    )}
+    {member && pathname !== '/mission' && (
       <Link
         href="/mission"
         className="border border-[#00b4d8] text-[#00b4d8] px-2 py-1 text-xs font-mono tracking-wider hover:bg-[#00b4d8] hover:text-black transition-colors"

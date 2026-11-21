@@ -8,7 +8,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { DRONE_PROFILES } from '@/lib/droneProfiles';
 import { computePerformance, defaultPayload } from '@/lib/performance';
 import { assess, WeatherPoint } from '@/lib/assessment';
-import { LatLng, fmtLatLng, parseLatLng } from '@/lib/geo';
+import { LatLng, fmtLatLng } from '@/lib/geo';
+import { parseCoordinates, toMGRS } from '@/lib/coords';
 import {
   aircraftFor, averageWind, bestAirspeed, planMission, reachPolygon, usableMinutes, windAt, Wind,
 } from '@/lib/mission';
@@ -88,6 +89,14 @@ export default function MissionPlanner() {
   }, [currentId]);
 
   const [clickTarget, setClickTarget] = useState<ClickTarget>('auto');
+  const [coordFormat, setCoordFormatState] = useState<CoordFormat>(() => {
+    if (typeof window === 'undefined') return 'wgs84';
+    try { return localStorage.getItem(COORD_FORMAT_KEY) === 'mgrs' ? 'mgrs' : 'wgs84'; } catch { return 'wgs84'; }
+  });
+  const setCoordFormat = (f: CoordFormat) => {
+    setCoordFormatState(f);
+    try { localStorage.setItem(COORD_FORMAT_KEY, f); } catch { /* storage unavailable */ }
+  };
   const [fitKey, setFitKey] = useState('init');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(false);
@@ -134,8 +143,8 @@ export default function MissionPlanner() {
     const usable = usableMinutes(aircraft, airspeedMs, mission.reservePct);
 
     const center = points[0];
-    const reachO = center ? reachPolygon({ center, mode: 'oneway', airspeedMs, usableMin: usable, wind: windLaunch, linkRangeKm: aircraft.linkRangeKm }) : null;
-    const reachR = center ? reachPolygon({ center, mode: 'return', airspeedMs, usableMin: usable, wind: windLaunch, linkRangeKm: aircraft.linkRangeKm }) : null;
+    const reachO = center ? reachPolygon({ center, mode: 'oneway', airspeedMs, usableMin: usable, wind: windLaunch }) : null;
+    const reachR = center ? reachPolygon({ center, mode: 'return', airspeedMs, usableMin: usable, wind: windLaunch }) : null;
 
     const wxA: FlyabilityAssessment = assess(drone, weatherPointAt(wA, h), lang, { payloadKg });
     const wB = weather[weather.length - 1];
@@ -147,17 +156,22 @@ export default function MissionPlanner() {
   // ---------------- route editing ----------------
   const setPoints = (next: LatLng[]) => update({ points: next });
 
-  const onMapClick = useCallback((p: LatLng) => {
+  /** Insert a point: A if none, then B, then waypoints before B (or the explicit target). */
+  const addPoint = useCallback((p: LatLng, explicit: ClickTarget = 'auto') => {
     if (!mission) return;
     const pts = mission.points;
-    const target: ClickTarget = clickTarget === 'auto' ? (pts.length === 0 ? 'A' : pts.length === 1 ? 'B' : 'wp') : clickTarget;
+    const target: ClickTarget = explicit === 'auto' ? (pts.length === 0 ? 'A' : pts.length === 1 ? 'B' : 'wp') : explicit;
     let next: LatLng[];
     if (target === 'A') next = pts.length === 0 ? [p] : [p, ...pts.slice(1)];
     else if (target === 'B') next = pts.length <= 1 ? [...pts, p] : [...pts.slice(0, -1), p];
     else next = pts.length < 2 ? [...pts, p] : [...pts.slice(0, -1), p, pts[pts.length - 1]];
     update({ points: next });
+  }, [mission, update]);
+
+  const onMapClick = useCallback((p: LatLng) => {
+    addPoint(p, clickTarget);
     if (clickTarget !== 'auto' && clickTarget !== 'wp') setClickTarget('auto');
-  }, [mission, clickTarget, update]);
+  }, [addPoint, clickTarget]);
 
   const onMovePoint = useCallback((i: number, p: LatLng) => {
     if (!mission) return;
@@ -177,12 +191,18 @@ export default function MissionPlanner() {
     if (!p) return [];
     const out: string[] = [];
     if (!p.allLegsFlyable) out.push(tr.reasonLeg);
-    if (p.windOverLimit) {
-      const maxW = Math.max(...p.legs.filter(l => !l.return).map(l => l.wind.speedMs));
-      out.push(tr.reasonWind(maxW.toFixed(1), calc!.aircraft.windLimitSustained));
-    }
-    if (!p.withinLink) out.push(tr.reasonLink(p.maxDistFromLaunchKm.toFixed(1), calc!.aircraft.linkRangeKm));
     if (p.marginMin < 0 && p.allLegsFlyable) out.push(tr.reasonBattery(Math.abs(p.marginMin).toFixed(1)));
+    return out;
+  };
+
+  /** Weather over the drone's limits: amber warnings, never blocking (operator decides). */
+  const windWarnings = (): string[] => {
+    const p = calc?.plan;
+    if (!p) return [];
+    const out: string[] = [];
+    if (p.windOverLimit) out.push(tr.warnWind(p.maxWindMs.toFixed(1), calc!.aircraft.windLimitSustained));
+    if (p.gustOverLimit) out.push(tr.warnGust(p.maxGustMs.toFixed(1), calc!.aircraft.windLimitGust));
+    if (!p.withinLink) out.push(tr.warnRange(p.maxDistFromLaunchKm.toFixed(1), calc!.aircraft.linkRangeKm));
     return out;
   };
 
@@ -203,11 +223,12 @@ export default function MissionPlanner() {
         `${tr.margin}: ${p.marginMin >= 0 ? '+' : ''}${p.marginMin.toFixed(1)} ${minU} · ${tr.batteryUsed}: ${Math.round(p.usedPct)}%`,
         ...(p.limitAlongKm !== undefined ? [p.turnBackPoint ? tr.turnBackHint(p.limitAlongKm.toFixed(1)) : tr.batteryLimitHint(p.limitAlongKm.toFixed(1))] : []),
         ...failReasons(),
+        ...windWarnings().map(w => `⚠ ${w}`),
       ] : [tr.needTwoPoints]),
       '',
       ...(calc.reachR ? [`${tr.reachReturn}: ${tr.reachRange(calc.reachR.minKm.toFixed(1), calc.reachR.maxKm.toFixed(1))}`] : []),
       ...(calc.reachO ? [`${tr.reachOneway}: ${tr.reachRange(calc.reachO.minKm.toFixed(1), calc.reachO.maxKm.toFixed(1))}`] : []),
-      ...points.map((pt, i) => `${pointName(i)}: ${fmtLatLng(pt)}`),
+      ...points.map((pt, i) => `${pointName(i)}: ${fmtLatLng(pt)} · MGRS ${toMGRS(pt, 5)}`),
     ];
     return {
       name: mission.name, mode: mission.mode, points, pointNames: points.map((_, i) => pointName(i)),
@@ -245,6 +266,7 @@ export default function MissionPlanner() {
   if (!mission) return null;
   const plan = calc?.plan ?? null;
   const reasons = failReasons();
+  const warnings = windWarnings();
 
   // ---------------- UI ----------------
   return (
@@ -424,24 +446,43 @@ export default function MissionPlanner() {
           title={tr.route}
           action={
             <div className="flex gap-1">
+              <div className="flex border border-[#1e2d45]" role="group" aria-label="coordinate format">
+                {(['wgs84', 'mgrs'] as const).map(f => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setCoordFormat(f)}
+                    aria-pressed={coordFormat === f}
+                    className={`px-1.5 py-1 text-[10px] font-mono ${coordFormat === f ? 'text-[#00b4d8] bg-[#00b4d8]/10' : 'text-[#4a6080] hover:text-[#c8d0e0]'}`}
+                  >
+                    {f === 'wgs84' ? 'WGS84' : 'MGRS'}
+                  </button>
+                ))}
+              </div>
               <Btn onClick={() => setPoints(points.slice().reverse())} disabled={points.length < 2}>{tr.reverseRoute}</Btn>
               <Btn onClick={() => setPoints([])} disabled={points.length === 0}>{tr.clearRoute}</Btn>
             </div>
           }
         >
           <div className="space-y-1.5">
-            {points.length === 0 && <div className="text-xs font-mono text-[#4a6080]">{tr.needTwoPoints}</div>}
             {points.map((p, i) => (
               <PointRow
                 key={`${i}-${points.length}`}
                 label={pointName(i)}
                 color={i === 0 ? '#00ff88' : i === points.length - 1 && points.length > 1 ? '#ff3344' : '#00b4d8'}
                 point={p}
-                placeholder={tr.coordsPlaceholder}
+                format={coordFormat}
                 onChange={q => setPoints(points.map((x, k) => (k === i ? q : x)))}
                 onRemove={() => setPoints(points.filter((_, k) => k !== i))}
               />
             ))}
+            <NewPointRow
+              label={points.length === 0 ? tr.pointA : points.length === 1 ? tr.pointB : '+'}
+              color={points.length === 0 ? '#00ff88' : points.length === 1 ? '#ff3344' : '#00b4d8'}
+              format={coordFormat}
+              placeholder={points.length === 0 ? tr.newPointA : points.length === 1 ? tr.newPointB : tr.newWaypoint}
+              onAdd={p => { addPoint(p); setFitKey(`add-${Date.now()}`); }}
+            />
             {locations.length > 0 && (
               <select
                 value=""
@@ -474,6 +515,7 @@ export default function MissionPlanner() {
                   {plan.feasible ? tr.feasible : tr.notFeasible}
                 </div>
                 {reasons.map(r => <div key={r} className="text-xs font-mono text-[#ff3344]">▶ {r}</div>)}
+                {warnings.map(w => <div key={w} className="text-xs font-mono text-[#ffaa00]">⚠ {w}</div>)}
                 {calc?.aircraft.estimated && <div className="text-[11px] font-mono text-[#ffaa00] mt-1">⚠ {tr.noSpecsWarning}</div>}
               </div>
 
@@ -483,7 +525,7 @@ export default function MissionPlanner() {
                 <Stat label={tr.usableTime} value={`${plan.usableMin.toFixed(1)} ${minU}`} />
                 <Stat label={tr.margin} value={`${plan.marginMin >= 0 ? '+' : ''}${plan.marginMin.toFixed(1)} ${minU}`} color={plan.marginMin >= 0 ? '#00ff88' : '#ff3344'} />
                 <Stat label={tr.batteryUsed} value={Number.isFinite(plan.usedPct) ? `${Math.round(plan.usedPct)}%` : '—'} color={plan.usedPct <= 100 ? (plan.usedPct > 85 ? '#ffaa00' : '#c8d0e0') : '#ff3344'} />
-                <Stat label={tr.maxFromLaunch} value={`${plan.maxDistFromLaunchKm.toFixed(1)} / ${calc!.aircraft.linkRangeKm} ${kmU}`} color={plan.withinLink ? '#c8d0e0' : '#ff3344'} />
+                <Stat label={tr.maxFromLaunch} value={`${plan.maxDistFromLaunchKm.toFixed(1)} / ${calc!.aircraft.linkRangeKm} ${kmU}`} color={plan.withinLink ? '#c8d0e0' : '#ffaa00'} />
               </div>
 
               {plan.limitAlongKm !== undefined && (
@@ -606,23 +648,38 @@ function SliderRow({ label, value, unit, display, min, max, step = 1, onChange, 
   );
 }
 
-function PointRow({ label, color, point, placeholder, onChange, onRemove }: {
-  label: string; color: string; point: LatLng; placeholder: string;
+type CoordFormat = 'wgs84' | 'mgrs';
+const COORD_FORMAT_KEY = 'dronefly.coordFormat';
+const MGRS_SAMPLE = '36U UA 24182 91607';
+const WGS_SAMPLE = '50.45010, 30.52340';
+
+const formatPoint = (p: LatLng, f: CoordFormat) => (f === 'mgrs' ? toMGRS(p, 5) || fmtLatLng(p) : fmtLatLng(p));
+
+/** WGS84 (decimal or DMS) or MGRS only — no place-name search in the planner. */
+const parsePointInput = (text: string): LatLng | null => {
+  const c = parseCoordinates(text);
+  return c ? { lat: c.lat, lng: c.lng } : null;
+};
+
+function PointRow({ label, color, point, format, onChange, onRemove }: {
+  label: string; color: string; point: LatLng; format: CoordFormat;
   onChange: (p: LatLng) => void; onRemove: () => void;
 }) {
-  const [text, setText] = useState(fmtLatLng(point));
+  const shown = formatPoint(point, format);
+  const [text, setText] = useState(shown);
   const [bad, setBad] = useState(false);
-  // Follow drags on the map.
+  // Follow drags on the map and format switches.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setText(fmtLatLng(point));
+    setText(shown);
     setBad(false);
-  }, [point]);
+  }, [shown]);
   const commit = () => {
-    if (text === fmtLatLng(point)) return; // unchanged — don't re-save a rounded copy
-    const p = parseLatLng(text);
+    if (text.trim() === shown) return; // unchanged — don't re-save a rounded copy
+    const p = parsePointInput(text);
     if (p) onChange(p); else setBad(true);
   };
+  const placeholder = format === 'mgrs' ? MGRS_SAMPLE : WGS_SAMPLE;
   return (
     <div className="flex items-center gap-1.5">
       <span className="w-8 h-7 shrink-0 flex items-center justify-center border-2 text-xs font-bold font-mono" style={{ borderColor: color, color }}>{label}</span>
@@ -637,6 +694,48 @@ function PointRow({ label, color, point, placeholder, onChange, onRemove }: {
         className={`${inputClass} !py-1 !text-xs flex-1`}
       />
       <button type="button" onClick={onRemove} aria-label="remove" className="w-7 h-7 border border-[#1e2d45] text-[#4a6080] hover:border-[#ff3344] hover:text-[#ff3344] text-xs">✕</button>
+    </div>
+  );
+}
+
+/** Typed entry for a new route point (MGRS or WGS84). Enter adds it; invalid input is highlighted. */
+function NewPointRow({ label, color, format, placeholder, onAdd }: {
+  label: string; color: string; format: CoordFormat; placeholder: string; onAdd: (p: LatLng) => void;
+}) {
+  const [text, setText] = useState('');
+  const [bad, setBad] = useState(false);
+  const parsed = text.trim() ? parsePointInput(text) : null;
+  const add = () => {
+    if (!text.trim()) return;
+    if (parsed) { onAdd(parsed); setText(''); setBad(false); } else setBad(true);
+  };
+  return (
+    <div>
+      <div className="flex items-center gap-1.5">
+        <span className="w-8 h-7 shrink-0 flex items-center justify-center border-2 border-dashed text-xs font-bold font-mono" style={{ borderColor: color, color }}>{label}</span>
+        <input
+          value={text}
+          onChange={e => { setText(e.target.value); setBad(false); }}
+          onKeyDown={e => { if (e.key === 'Enter') add(); }}
+          placeholder={`${placeholder} — ${format === 'mgrs' ? MGRS_SAMPLE : WGS_SAMPLE}`}
+          aria-invalid={bad}
+          aria-label={placeholder}
+          spellCheck={false}
+          className={`${inputClass} !py-1 !text-xs flex-1`}
+        />
+        <button
+          type="button"
+          onClick={add}
+          disabled={!parsed}
+          aria-label={placeholder}
+          className="w-7 h-7 border border-[#00b4d8] text-[#00b4d8] text-sm disabled:opacity-30 hover:bg-[#00b4d8] hover:text-black"
+        >+</button>
+      </div>
+      {parsed && (
+        <div className="pl-10 pt-0.5 text-[10px] font-mono text-[#00ff88]">
+          ▸ {fmtLatLng(parsed)} · MGRS {toMGRS(parsed, 5)}
+        </div>
+      )}
     </div>
   );
 }

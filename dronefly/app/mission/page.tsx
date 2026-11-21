@@ -7,16 +7,17 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import AccountMenu from '@/components/AccountMenu';
 import MissionPlanner from '@/components/mission/MissionPlanner';
 import { Btn } from '@/components/profile/ui';
+import AccessGate from '@/components/access/AccessGate';
 
 export default function MissionPage() {
-  const { enabled, user, loading, error, signInWithGoogle } = useAuth();
+  const { enabled, user, loading, member, error, signInWithGoogle } = useAuth();
   const { ready } = useUserData();
   const { lang, setLang, tr } = useLanguage();
 
   let body: React.ReactNode;
   if (!enabled) {
     body = <Notice>{tr.authUnavailable}</Notice>;
-  } else if (loading || (user && !ready)) {
+  } else if (loading || (user && member === null) || (user && member && !ready)) {
     body = <Notice pulse>{tr.loadingProfile}</Notice>;
   } else if (!user) {
     body = (
@@ -32,6 +33,8 @@ export default function MissionPage() {
         </div>
       </div>
     );
+  } else if (!member) {
+    body = <div className="flex-1 p-4"><div className="mt-8"><AccessGate /></div></div>;
   } else {
     // key: remount per account so per-user mission storage is read fresh.
     body = <MissionPlanner key={user.uid} />;

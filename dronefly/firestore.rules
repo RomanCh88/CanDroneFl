@@ -1,12 +1,24 @@
 rules_version = '2';
 
-// DroneFly — every document lives under users/{uid} and is private to its owner.
+// DroneFly — accounts are INVITE-ONLY.
+//  - users/{uid}/**: private to its owner, and only if the owner is a member.
+//  - members, invites, inviteQuota, accessRequests: written ONLY by the server (Admin SDK bypasses
+//    rules); clients may read their own members/{uid} and accessRequests/{uid} docs.
 // Value bounds mirror components/profile/DroneForm.tsx (BOUNDS).
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function isOwner(uid) {
       return request.auth != null && request.auth.uid == uid;
+    }
+
+    function isMember() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/members/$(request.auth.uid));
+    }
+
+    function isMemberOwner(uid) {
+      return isOwner(uid) && isMember();
     }
 
     function num(v, lo, hi) {
@@ -105,19 +117,30 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read, delete: if isOwner(uid);
-      allow create, update: if isOwner(uid) && validUser(request.resource.data);
+      allow read, delete: if isMemberOwner(uid);
+      allow create, update: if isMemberOwner(uid) && validUser(request.resource.data);
 
       match /locations/{id} {
-        allow read, delete: if isOwner(uid);
-        allow create, update: if isOwner(uid) && validLocation(request.resource.data);
+        allow read, delete: if isMemberOwner(uid);
+        allow create, update: if isMemberOwner(uid) && validLocation(request.resource.data);
       }
 
       match /drones/{id} {
-        allow read, delete: if isOwner(uid);
-        allow create, update: if isOwner(uid) && validDrone(request.resource.data);
+        allow read, delete: if isMemberOwner(uid);
+        allow create, update: if isMemberOwner(uid) && validDrone(request.resource.data);
       }
     }
+
+    // Server-managed. Own doc readable so the app can react live (e.g. approval).
+    match /members/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+    match /accessRequests/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+    // invites/*, inviteQuota/* — server only (covered by the deny-all below).
 
     // Everything else is closed.
     match /{document=**} {

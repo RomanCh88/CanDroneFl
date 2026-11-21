@@ -9,16 +9,18 @@ import { DRONE_PROFILES } from '@/lib/droneProfiles';
 import { DroneProfile, SavedLocation } from '@/types';
 import DroneForm from '@/components/profile/DroneForm';
 import { Panel, Btn, ConfirmDeleteBtn, Field, inputClass } from '@/components/profile/ui';
+import AccessGate from '@/components/access/AccessGate';
+import InvitesPanel from '@/components/access/InvitesPanel';
 
 export default function ProfilePage() {
-  const { enabled, user, loading, error, signInWithGoogle, signOut } = useAuth();
+  const { enabled, user, loading, member, error, signInWithGoogle, signOut } = useAuth();
   const { ready } = useUserData();
   const { lang, setLang, tr } = useLanguage();
 
   let body: React.ReactNode;
   if (!enabled) {
     body = <Notice>{tr.authUnavailable}</Notice>;
-  } else if (loading || (user && !ready)) {
+  } else if (loading || (user && member === null) || (user && member && !ready)) {
     body = <Notice pulse>{tr.loadingProfile}</Notice>;
   } else if (!user) {
     body = (
@@ -37,6 +39,8 @@ export default function ProfilePage() {
         <Btn variant="primary" onClick={signInWithGoogle} className="!text-xs !px-4 !py-2">G&nbsp;&nbsp;{tr.signIn}</Btn>
       </div>
     );
+  } else if (!member) {
+    body = <AccessGate />;
   } else {
     body = (
       <div className="space-y-4">
@@ -55,6 +59,7 @@ export default function ProfilePage() {
         <PreferencesPanel />
         <LocationsPanel />
         <DronesPanel />
+        <InvitesPanel />
       </div>
     );
   }

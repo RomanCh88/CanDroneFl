@@ -13,6 +13,7 @@ import { useUserData } from '@/contexts/UserDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import AccountMenu from '@/components/AccountMenu';
 import SavedLocationsMenu from '@/components/SavedLocationsMenu';
+import LocationSearch from '@/components/LocationSearch';
 import WeatherPanel from '@/components/WeatherPanel';
 import DroneCards from '@/components/DroneCards';
 import DroneDetail from '@/components/DroneDetail';
@@ -45,7 +46,7 @@ function buildWeatherPoint(wx: WeatherData['current']) {
 
 export default function Home() {
   const { lang, setLang, tr } = useLanguage();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, member } = useAuth();
   const { ready: userReady, prefs, locations, customDrones } = useUserData();
   const [location, setLocation] = useState<Location>(DEFAULT_LOCATION);
   const { weather, loading, error, updatedAt: lastUpdated, stale } = useWeather(location.lat, location.lng);
@@ -75,7 +76,7 @@ export default function Home() {
 
   // If the selected drone disappears (deleted custom drone / sign-out), fall back to the first one.
   // Wait while custom drones may still be loading, so a deep-linked custom drone isn't dropped.
-  const profilesSettled = !authLoading && (!user || userReady);
+  const profilesSettled = !authLoading && (!user || member === false || userReady);
   // Derived (not stored): the selection itself is kept so it comes back if the drone reappears.
   const effectiveDroneId = !profilesSettled || allProfiles.some(p => p.id === selectedDroneId)
     ? selectedDroneId
@@ -217,6 +218,8 @@ export default function Home() {
             WX
           </span>
         </div>
+
+        <LocationSearch onSelect={setLocation} />
 
         <div className="flex items-center gap-2 ml-2">
           <span className="text-xs" style={{ color: '#4a6080', fontFamily: 'var(--font-jetbrains)' }}>

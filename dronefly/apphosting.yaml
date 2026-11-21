@@ -30,6 +30,28 @@ env:
     value: "1:228737059549:web:882f219938334916822934"
     availability: [BUILD, RUNTIME]
 
+  # --- Invite-only access (server-only, RUNTIME) ---
+  # Create the secrets FIRST, then uncomment (a missing secret fails the rollout):
+  #   npx firebase-tools apphosting:secrets:set adminEmail      # your private admin address
+  #   npx firebase-tools apphosting:secrets:set approvalSecret  # 48 random bytes, base64url
+  #   npx firebase-tools apphosting:secrets:set resendApiKey    # from resend.com
+  # (each command offers to grant the backend access — answer yes)
+  # - variable: ADMIN_EMAIL
+  #   secret: adminEmail
+  #   availability: [RUNTIME]
+  # - variable: APPROVAL_SECRET
+  #   secret: approvalSecret
+  #   availability: [RUNTIME]
+  # - variable: RESEND_API_KEY
+  #   secret: resendApiKey
+  #   availability: [RUNTIME]
+  # - variable: EMAIL_FROM
+  #   value: "DroneFly <noreply@candronefly.org>"
+  #   availability: [RUNTIME]
+  # - variable: APP_URL
+  #   value: "https://candronefly.org"
+  #   availability: [RUNTIME]
+
 # (original template below)
 # env:
   # Configure environment variables.

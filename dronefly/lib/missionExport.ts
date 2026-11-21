@@ -4,6 +4,7 @@
 // All generated locally in the browser; nothing is uploaded.
 
 import type { LatLng } from './geo';
+import { toMGRS } from './coords';
 import type { MissionMode, MissionPlan, Wind } from './mission';
 
 export interface ExportContext {
@@ -67,14 +68,16 @@ export function toJSON(ctx: ExportContext): Blob {
     mission: {
       name: ctx.name, mode: ctx.mode, departure: ctx.departure, altitudeM: ctx.altitudeM,
       airspeedKmh: r(ctx.airspeedKmh), payloadKg: ctx.payloadKg, totalWeightKg: ctx.totalWeightKg, reservePct: ctx.reservePct,
-      points: ctx.points.map((pt, i) => ({ name: ctx.pointNames[i], lat: r(pt.lat, 6), lng: r(pt.lng, 6) })),
+      points: ctx.points.map((pt, i) => ({ name: ctx.pointNames[i], lat: r(pt.lat, 6), lng: r(pt.lng, 6), mgrs: toMGRS(pt, 5) })),
     },
     drone: ctx.drone,
     windAtLaunch: ctx.windAtLaunch && { speedMs: r(ctx.windAtLaunch.speedMs), fromDeg: r(ctx.windAtLaunch.fromDeg, 0), gustMs: r(ctx.windAtLaunch.gustMs) },
     result: p && {
       feasible: p.feasible, distanceKm: r(p.distanceKm, 2), flightTimeMin: r(p.timeMin), usableTimeMin: r(p.usableMin),
       marginMin: r(p.marginMin), batteryUsedPct: r(p.usedPct, 0), maxDistFromLaunchKm: r(p.maxDistFromLaunchKm, 2),
-      withinRange: p.withinLink, allLegsFlyable: p.allLegsFlyable, windOverLimit: p.windOverLimit,
+      withinRange: p.withinLink, allLegsFlyable: p.allLegsFlyable,
+      maxWindMs: r(p.maxWindMs), maxGustMs: r(p.maxGustMs),
+      windOverLimit: p.windOverLimit, gustOverLimit: p.gustOverLimit,
       turnBackPoint: p.turnBackPoint && { lat: r(p.turnBackPoint.lat, 6), lng: r(p.turnBackPoint.lng, 6) },
       batteryLimitPoint: p.batteryLimitPoint && { lat: r(p.batteryLimitPoint.lat, 6), lng: r(p.batteryLimitPoint.lng, 6) },
       limitAlongRouteKm: p.limitAlongKm !== undefined ? r(p.limitAlongKm, 2) : undefined,
@@ -277,7 +280,8 @@ export async function toPNG(ctx: ExportContext): Promise<Blob> {
     g.moveTo(a.x, a.y);
     g.lineTo(b.x, b.y);
     g.setLineDash(leg.return ? [12, 8] : []);
-    g.strokeStyle = leg.feasible ? (ctx.plan!.feasible ? '#00b4d8' : '#ffaa00') : '#ff3344';
+    const pl = ctx.plan!;
+    g.strokeStyle = !leg.feasible ? '#ff3344' : pl.feasible && !pl.windOverLimit && !pl.gustOverLimit && pl.withinLink ? '#00b4d8' : '#ffaa00';
     g.lineWidth = leg.return ? 3 : 4;
     g.stroke();
     g.setLineDash([]);

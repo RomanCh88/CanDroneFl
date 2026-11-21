@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { toMGRS } from '@/lib/coords';
 
 interface MapProps {
   lat: number;
@@ -80,7 +81,8 @@ export default function Map({ lat, lng, onLocationChange }: MapProps) {
     <div className="relative h-full">
       <div ref={mapRef} className="w-full h-full" style={{ minHeight: '300px' }} />
       <div className="absolute bottom-2 left-2 bg-black/70 text-[#00b4d8] text-xs font-mono px-2 py-1 z-[1000]">
-        {lat.toFixed(4)}, {lng.toFixed(4)}
+        <div>{lat.toFixed(5)}, {lng.toFixed(5)}</div>
+        <div className="text-[#4a6080]">MGRS {toMGRS({ lat, lng }, 5)}</div>
       </div>
     </div>
   );

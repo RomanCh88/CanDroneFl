@@ -112,7 +112,8 @@ export default function MissionMap(props: Props) {
     if (plan) {
       for (const leg of plan.legs) {
         L.polyline([ll(leg.from), ll(leg.to)], {
-          color: leg.feasible ? (plan.feasible ? MAP_COLORS.routeOk : MAP_COLORS.limit) : MAP_COLORS.routeBad,
+          color: !leg.feasible ? MAP_COLORS.routeBad
+            : plan.feasible && !plan.windOverLimit && !plan.gustOverLimit && plan.withinLink ? MAP_COLORS.routeOk : MAP_COLORS.limit,
           weight: leg.return ? 2 : 3,
           dashArray: leg.return ? '8 6' : undefined,
           opacity: 0.95,

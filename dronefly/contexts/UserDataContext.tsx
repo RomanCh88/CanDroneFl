@@ -57,8 +57,9 @@ const emptyStore = (uid: string | null): DataStore => ({
 });
 
 export function UserDataProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const uid = user?.uid ?? null;
+  const { user, member } = useAuth();
+  // Only members have data (and Firestore rules deny everyone else).
+  const uid = user && member ? user.uid : null;
   const { lang, setLang } = useLanguage();
 
   // All data is tagged with the uid it belongs to; data for another uid (or none) reads as empty.

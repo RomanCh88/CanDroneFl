@@ -9,7 +9,8 @@
 //  - Per leg, wind (speed w, coming FROM φ) is split into along-track a and cross-track c.
 //    Ground speed g = √(v² − c²) + a. If c ≥ v or g ≤ 0 the leg is impossible.
 //  - One-way reach on heading θ: T·g(θ). Out-and-back reach: T·g₁g₂ / (g₁ + g₂).
-//  - Distances from the launch point are capped by the control-link range.
+//  - The control-link / max range is NOT a cap: reach areas show physical reach; exceeding the
+//    range is a warning (drawn as a separate circle on the map).
 
 import { DroneProfile, PerformanceResult } from '@/types';
 import { LatLng, bearingDeg, destination, distanceKm, interpolate } from './geo';
@@ -100,9 +101,12 @@ export function windAt(pw: PointWeather, h: number, altitudeM: number): Wind {
   const x = a.x + (b.x - a.x) * t;
   const y = a.y + (b.y - a.y) * t;
   const fromDeg = (Math.atan2(x, y) * 180) / Math.PI;
+  // Gusts are a turbulent EXCESS over the mean wind that does not grow with height, so add the
+  // 10 m excess instead of scaling by the 10 m gust ratio (which explodes in light wind:
+  // 2.7 m/s gusting 7.2 → ratio 2.7 → 9.9 m/s aloft would become a fake 26 m/s gust).
   const s10 = pw.windSpeed[0][h] ?? 0;
-  const gustRatio = s10 > 0.5 ? (pw.gusts10[h] ?? s10) / s10 : 1.3;
-  return { speedMs: speed, fromDeg: (fromDeg + 360) % 360, gustMs: Math.max(speed, speed * gustRatio) };
+  const excess = Math.max(0, (pw.gusts10[h] ?? s10) - s10);
+  return { speedMs: speed, fromDeg: (fromDeg + 360) % 360, gustMs: speed + excess };
 }
 
 /** Vector-average several winds (for a leg crossing several forecast cells). */
@@ -171,8 +175,15 @@ export interface MissionPlan {
   maxDistFromLaunchKm: number;
   withinLink: boolean;
   allLegsFlyable: boolean;
-  /** Wind on some leg exceeds the drone's limits. */
+  /** Strongest mean wind / gust on the outbound legs (m/s). */
+  maxWindMs: number;
+  maxGustMs: number;
+  /** Over the drone's weather limits — a WARNING only: the planner lets you fly in any conditions,
+   *  the wind just shrinks distance/time (physically impossible legs are caught by allLegsFlyable). */
   windOverLimit: boolean;
+  gustOverLimit: boolean;
+  /** Physically possible: every leg flyable and enough battery.
+   *  Weather limits and the max range (control link) are warnings only — the operator decides. */
   feasible: boolean;
   /** One-way: point where usable time runs out along the route (if it does). */
   batteryLimitPoint?: LatLng;
@@ -234,15 +245,19 @@ export function planMission(opts: {
   const launch = points[0];
   const maxDistFromLaunchKm = Math.max(...points.map(p => distanceKm(launch, p)));
   const allLegsFlyable = legs.every(l => l.feasible);
-  const windOverLimit = out.some(l => l.wind.speedMs > ac.windLimitSustained || l.wind.gustMs > ac.windLimitGust);
+  const maxWindMs = Math.max(0, ...out.map(l => l.wind.speedMs));
+  const maxGustMs = Math.max(0, ...out.map(l => l.wind.gustMs));
+  const windOverLimit = maxWindMs > ac.windLimitSustained;
+  const gustOverLimit = maxGustMs > ac.windLimitGust;
   const withinLink = maxDistFromLaunchKm <= ac.linkRangeKm + 1e-9;
 
   const plan: MissionPlan = {
     legs, distanceKm: distance, timeMin, usableMin,
     marginMin: usableMin - timeMin,
     usedPct: usableMin > 0 ? (timeMin / usableMin) * 100 : Infinity,
-    maxDistFromLaunchKm, withinLink, allLegsFlyable, windOverLimit,
-    feasible: allLegsFlyable && withinLink && !windOverLimit && timeMin <= usableMin,
+    maxDistFromLaunchKm, withinLink, allLegsFlyable,
+    maxWindMs, maxGustMs, windOverLimit, gustOverLimit,
+    feasible: allLegsFlyable && timeMin <= usableMin,
   };
 
   if (mode === 'oneway') {
@@ -291,10 +306,9 @@ export function reachPolygon(opts: {
   airspeedMs: number;
   usableMin: number;
   wind: Wind;
-  linkRangeKm: number;
   steps?: number;
 }): { polygon: LatLng[]; minKm: number; maxKm: number } {
-  const { center, mode, airspeedMs: v, usableMin, wind, linkRangeKm } = opts;
+  const { center, mode, airspeedMs: v, usableMin, wind } = opts;
   const steps = opts.steps ?? 72;
   const T = usableMin / 60; // h
   const polygon: LatLng[] = [];
@@ -308,7 +322,6 @@ export function reachPolygon(opts: {
       const g2 = groundSpeed((brg + 180) % 360, v, wind).g * 3.6;
       r = g1 > 0 && g2 > 0 ? (T * g1 * g2) / (g1 + g2) : 0;
     }
-    r = Math.min(r, linkRangeKm);
     minKm = Math.min(minKm, r);
     maxKm = Math.max(maxKm, r);
     polygon.push(destination(center, brg, r));

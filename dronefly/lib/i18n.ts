@@ -295,9 +295,10 @@ export type Translations = {
   needTwoPoints: string;
   loadingRouteWx: string;
   reasonBattery: (m: string) => string;
-  reasonLink: (d: string, l: number) => string;
+  warnRange: (d: string, l: number) => string;
   reasonLeg: string;
-  reasonWind: (w: string, l: number) => string;
+  warnWind: (w: string, l: number) => string;
+  warnGust: (g: string, l: number) => string;
   distance: string;
   flightTime: string;
   usableTime: string;
@@ -334,6 +335,56 @@ export type Translations = {
   windAtAlt: (alt: number) => string;
   deleteMission: string;
   generatedBy: string;
+  searchPlaceholder: string;
+  searchNoResults: string;
+  searchError: string;
+  searchHint: string;
+  kindDms: string;
+  newPointA: string;
+  newPointB: string;
+  newWaypoint: string;
+  inviteOnlyBadge: string;
+  inviteOnlyTitle: string;
+  inviteOnlyText: string;
+  haveInvite: string;
+  invitePlaceholder: string;
+  redeem: string;
+  requestAccess: string;
+  requestMessagePlaceholder: string;
+  sendRequest: string;
+  requestPending: string;
+  requestRejected: string;
+  requestEmailFailed: string;
+  switchAccount: string;
+  inviteErr_not_found: string;
+  inviteErr_used: string;
+  inviteErr_expired: string;
+  inviteErr_revoked: string;
+  inviteErr_generic: string;
+  inviteTitle: string;
+  invitedBy: (n: string) => string;
+  inviteValidUntil: (t: string) => string;
+  acceptInvite: string;
+  signInToAccept: string;
+  inviteAccepted: string;
+  alreadyMember: string;
+  goToProfile: string;
+  invitesTitle: string;
+  createInvite: string;
+  invitesHint: string;
+  invitesLeft: (n: number, l: number) => string;
+  invitesResetAt: (t: string) => string;
+  copy: string;
+  copied: string;
+  share: string;
+  revoke: string;
+  inviteStatus_active: string;
+  inviteStatus_used: string;
+  inviteStatus_expired: string;
+  inviteStatus_revoked: string;
+  noInvitesYet: string;
+  quotaExceeded: string;
+  serverUnavailable: string;
   cachedHint: string;
 };
 
@@ -607,16 +658,17 @@ const uk: Translations = {
   fromSaved: '★ збережені',
   reverseRoute: '⇄ РОЗВЕРНУТИ',
   clearRoute: 'ОЧИСТИТИ',
-  routeHint: 'Перетягуйте точки на карті. Координати можна вставити вручну.',
+  routeHint: 'Клікайте або перетягуйте точки на карті, або вводьте координати: MGRS чи WGS84 (десяткові або Г°Х′С″). Enter — додати.',
   results: 'РЕЗУЛЬТАТ',
   feasible: 'ВИКОНУВАНА',
   notFeasible: 'НЕ ВИКОНУВАНА',
   needTwoPoints: 'Поставте точки А і Б на карті',
   loadingRouteWx: 'Завантаження погоди вздовж маршруту…',
   reasonBattery: (m) => `Не вистачає батареї: −${m} хв`,
-  reasonLink: (d, l) => `Точка ${d} км від старту — далі за дальність ${l} км`,
+  warnRange: (d, l) => `Точка ${d} км від старту — далі за макс. дальність ${l} км (ризик втрати зв’язку), рішення за оператором`,
   reasonLeg: 'Вітер сильніший за швидкість — відрізок неможливий',
-  reasonWind: (w, l) => `Вітер на маршруті ${w} м/с вище ліміту ${l} м/с`,
+  warnWind: (w, l) => `Вітер на маршруті ${w} м/с вище ліміту ${l} м/с — дальність зменшена, рішення за оператором`,
+  warnGust: (g, l) => `Пориви на маршруті до ${g} м/с вище ліміту ${l} м/с — рішення за оператором`,
   distance: 'Відстань',
   flightTime: 'Час польоту',
   usableTime: 'Доступний час (мінус резерв)',
@@ -653,6 +705,56 @@ const uk: Translations = {
   windAtAlt: (alt) => `вітер на ${alt} м`,
   deleteMission: 'ВИДАЛИТИ МІСІЮ',
   generatedBy: 'Згенеровано DroneFly — лише оцінка, застосовуйте оперативне судження',
+  searchPlaceholder: 'Координати, MGRS або населений пункт',
+  searchNoResults: 'Нічого не знайдено',
+  searchError: 'Пошук недоступний — перевірте з’єднання. Координати працюють без мережі.',
+  searchHint: 'Напр.: 50.4501, 30.5234 · 50°27′00″N 30°31′24″E · 36U UA 24182 91607 · Бровари',
+  kindDms: 'WGS84 (Г°Х′С″)',
+  newPointA: 'А — старт',
+  newPointB: 'Б — ціль',
+  newWaypoint: 'Проміжна точка',
+  inviteOnlyBadge: 'ЗА ЗАПРОШЕННЯМ',
+  inviteOnlyTitle: 'Розширені можливості — лише за запрошенням',
+  inviteOnlyText: 'Ви увійшли, але ваш акаунт ще не має доступу. Введіть запрошення від іншого користувача або попросіть доступ в адміністратора.',
+  haveInvite: 'МАЮ ЗАПРОШЕННЯ',
+  invitePlaceholder: 'Код або посилання запрошення',
+  redeem: 'АКТИВУВАТИ',
+  requestAccess: 'ПОПРОСИТИ ДОСТУП',
+  requestMessagePlaceholder: 'Коротко: хто ви і навіщо доступ (необовʼязково)',
+  sendRequest: 'НАДІСЛАТИ ЗАПИТ',
+  requestPending: 'Запит надіслано. Доступ відкриється автоматично, щойно адміністратор його схвалить.',
+  requestRejected: 'Запит відхилено. Повторити можна через 24 години.',
+  requestEmailFailed: 'Запит збережено, але лист адміністратору не надіслався. Спробуйте пізніше або скористайтеся запрошенням.',
+  switchAccount: 'Увійти іншим акаунтом',
+  inviteErr_not_found: 'Запрошення не знайдено',
+  inviteErr_used: 'Це запрошення вже використано',
+  inviteErr_expired: 'Термін дії запрошення минув (24 год)',
+  inviteErr_revoked: 'Запрошення скасовано',
+  inviteErr_generic: 'Не вдалося — спробуйте ще раз',
+  inviteTitle: '// ЗАПРОШЕННЯ',
+  invitedBy: (n) => n ? `${n} запрошує вас до DroneFly` : 'Вас запрошено до DroneFly',
+  inviteValidUntil: (t) => `Дійсне до ${t}, одноразове`,
+  acceptInvite: 'ПРИЙНЯТИ ЗАПРОШЕННЯ',
+  signInToAccept: 'Увійдіть через Google, щоб прийняти запрошення',
+  inviteAccepted: 'Доступ відкрито! Ласкаво просимо.',
+  alreadyMember: 'У вас уже є доступ',
+  goToProfile: 'ДО ПРОФІЛЮ',
+  invitesTitle: 'ЗАПРОШЕННЯ',
+  createInvite: '+ СТВОРИТИ ЗАПРОШЕННЯ',
+  invitesHint: 'Посилання діє 24 години і лише для однієї людини. Надсилайте лише тим, кому довіряєте.',
+  invitesLeft: (n, l) => `Залишилось ${n} з ${l} на добу`,
+  invitesResetAt: (t) => `Нові будуть доступні о ${t}`,
+  copy: 'КОПІЮВАТИ',
+  copied: 'СКОПІЙОВАНО',
+  share: 'ПОДІЛИТИСЯ',
+  revoke: 'СКАСУВАТИ',
+  inviteStatus_active: 'активне',
+  inviteStatus_used: 'використано',
+  inviteStatus_expired: 'прострочене',
+  inviteStatus_revoked: 'скасоване',
+  noInvitesYet: 'Ви ще не створювали запрошень',
+  quotaExceeded: 'Ліміт 10 запрошень на добу вичерпано',
+  serverUnavailable: 'Сервер недоступний — спробуйте пізніше',
   cachedHint: 'Показано останній збережений прогноз, оновлення триває',
 };
 
@@ -926,16 +1028,17 @@ const en: Translations = {
   fromSaved: '★ saved',
   reverseRoute: '⇄ REVERSE',
   clearRoute: 'CLEAR',
-  routeHint: 'Drag points on the map. Coordinates can be pasted manually.',
+  routeHint: 'Click or drag points on the map, or type coordinates: MGRS or WGS84 (decimal or DMS). Enter adds.',
   results: 'RESULT',
   feasible: 'FEASIBLE',
   notFeasible: 'NOT FEASIBLE',
   needTwoPoints: 'Place points A and B on the map',
   loadingRouteWx: 'Loading weather along the route…',
   reasonBattery: (m) => `Not enough battery: −${m} min`,
-  reasonLink: (d, l) => `A point is ${d} km from launch — beyond the ${l} km range`,
+  warnRange: (d, l) => `A point is ${d} km from launch — beyond the ${l} km max range (risk of link loss), operator's call`,
   reasonLeg: 'Wind stronger than airspeed — a leg is impossible',
-  reasonWind: (w, l) => `Wind on the route ${w} m/s above the ${l} m/s limit`,
+  warnWind: (w, l) => `Wind on the route ${w} m/s above the ${l} m/s limit — reduced range, operator's call`,
+  warnGust: (g, l) => `Gusts on the route up to ${g} m/s above the ${l} m/s limit — operator's call`,
   distance: 'Distance',
   flightTime: 'Flight time',
   usableTime: 'Usable time (minus reserve)',
@@ -972,6 +1075,56 @@ const en: Translations = {
   windAtAlt: (alt) => `wind at ${alt} m`,
   deleteMission: 'DELETE MISSION',
   generatedBy: 'Generated by DroneFly — estimate only, apply operational judgment',
+  searchPlaceholder: 'Coordinates, MGRS or a place',
+  searchNoResults: 'Nothing found',
+  searchError: 'Search unavailable — check your connection. Coordinates work offline.',
+  searchHint: 'E.g.: 50.4501, 30.5234 · 50°27′00″N 30°31′24″E · 36U UA 24182 91607 · Brovary',
+  kindDms: 'WGS84 (DMS)',
+  newPointA: 'A — launch',
+  newPointB: 'B — target',
+  newWaypoint: 'Waypoint',
+  inviteOnlyBadge: 'INVITE ONLY',
+  inviteOnlyTitle: 'Extended features are invite-only',
+  inviteOnlyText: 'You are signed in, but your account has no access yet. Enter an invite from another user or request access from the administrator.',
+  haveInvite: 'I HAVE AN INVITE',
+  invitePlaceholder: 'Invite code or link',
+  redeem: 'ACTIVATE',
+  requestAccess: 'REQUEST ACCESS',
+  requestMessagePlaceholder: 'Briefly: who you are and why (optional)',
+  sendRequest: 'SEND REQUEST',
+  requestPending: 'Request sent. Access opens automatically as soon as the administrator approves it.',
+  requestRejected: 'Request rejected. You can try again in 24 hours.',
+  requestEmailFailed: 'Request saved, but the email to the administrator failed. Try later or use an invite.',
+  switchAccount: 'Use another account',
+  inviteErr_not_found: 'Invite not found',
+  inviteErr_used: 'This invite has already been used',
+  inviteErr_expired: 'This invite has expired (24 h)',
+  inviteErr_revoked: 'This invite was revoked',
+  inviteErr_generic: 'Something went wrong — try again',
+  inviteTitle: '// INVITE',
+  invitedBy: (n) => n ? `${n} invites you to DroneFly` : 'You are invited to DroneFly',
+  inviteValidUntil: (t) => `Valid until ${t}, single use`,
+  acceptInvite: 'ACCEPT INVITE',
+  signInToAccept: 'Sign in with Google to accept the invite',
+  inviteAccepted: 'Access granted! Welcome.',
+  alreadyMember: 'You already have access',
+  goToProfile: 'TO PROFILE',
+  invitesTitle: 'INVITES',
+  createInvite: '+ CREATE INVITE',
+  invitesHint: 'A link works for 24 hours and for one person only. Send it only to people you trust.',
+  invitesLeft: (n, l) => `${n} of ${l} left for today`,
+  invitesResetAt: (t) => `More available at ${t}`,
+  copy: 'COPY',
+  copied: 'COPIED',
+  share: 'SHARE',
+  revoke: 'REVOKE',
+  inviteStatus_active: 'active',
+  inviteStatus_used: 'used',
+  inviteStatus_expired: 'expired',
+  inviteStatus_revoked: 'revoked',
+  noInvitesYet: 'You haven’t created any invites yet',
+  quotaExceeded: 'Daily limit of 10 invites reached',
+  serverUnavailable: 'Server unavailable — try later',
   cachedHint: 'Showing the last saved forecast while refreshing',
 };
 
