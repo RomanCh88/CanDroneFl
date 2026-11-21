@@ -17,7 +17,7 @@ The original spec is `../drone-wx-instructions.md` (repo root). Read it for the 
 ## Commands (run from `dronefly/`)
 - `npm run dev` / `npm run build` / `npm start` / `npm run lint`
 - `build` runs `scripts/generate-icons.mjs` first (sharp: `public/icon.svg` → icon-192/512 + apple-touch-icon). sharp is **not** a declared dependency; it only works because Next pulls it in transitively.
-- Typecheck: `npx tsc --noEmit` (clean as of 2026-11-21).
+- Typecheck: `node node_modules/typescript/bin/tsc --noEmit` (clean as of 2026-11-21). `npx tsc` fails on Windows because of the missing bin shims below.
 - ⚠ `node_modules` was installed under WSL/Linux. On Windows `eslint` and other bin shims are missing. Reinstall on the host OS you are using, or run from WSL.
 
 ## Architecture
@@ -47,7 +47,7 @@ Bugs / correctness:
 - `adjustRange` ignores wind direction. Fetched but unused: `precipitation_probability`, `wind_speed_80m`, cloud layers, pressure.
 - Location name for clicked points is only coordinates (no reverse geocoding/search).
 Production readiness:
-- Donate links are placeholders (`nowpayments.io/donation`, `paypal.me`, `send.monobank.ua`).
+- Donate links are placeholders (`nowpayments.io/donation`, `paypal.me`, `send.monobank.ua`). **Donations are hidden** via `SHOW_DONATIONS = false` in `lib/features.ts` (user decision 2026-11-21); set real links before flipping it back on.
 - README is still the create-next-app boilerplate. `public/` still has the default next/vercel/file/globe/window SVGs.
 - No tests at all (the rules engine is pure and easy to unit-test). No CI. No error boundary. No retry/backoff on the fetch.
 - No SEO/OG metadata, no `metadataBase`, no viewport/themeColor export, `lang` on `<html>` is fixed to `uk`.

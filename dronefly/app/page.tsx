@@ -14,6 +14,7 @@ import DroneDetail from '@/components/DroneDetail';
 import Timeline from '@/components/Timeline';
 import BestWindows from '@/components/BestWindows';
 import DonateButton from '@/components/DonateButton';
+import { SHOW_DONATIONS } from '@/lib/features';
 
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false });
 
@@ -205,7 +206,7 @@ function HomeInner() {
             <span style={{ color: lang === 'en' ? '#00b4d8' : '#4a6080' }}>EN</span>
           </button>
 
-          <DonateButton compact />
+          {SHOW_DONATIONS && <DonateButton compact />}
         </div>
       </header>
 
@@ -312,9 +313,11 @@ function HomeInner() {
           </section>
         )}
 
-        <section className="border-t pt-4" style={{ borderColor: '#1e2d45' }}>
-          <DonateButton />
-        </section>
+        {SHOW_DONATIONS && (
+          <section className="border-t pt-4" style={{ borderColor: '#1e2d45' }}>
+            <DonateButton />
+          </section>
+        )}
 
         <footer className="border-t pt-4 pb-8" style={{ borderColor: '#1e2d45' }}>
           <div className="text-xs space-y-1" style={{ color: '#2d4060', fontFamily: 'var(--font-jetbrains)' }}>
