@@ -127,3 +127,44 @@ export const DRONE_PROFILES: DroneProfile[] = [
     notesUk: 'Всепогодний. Антиобледенільна система. Катапультний запуск.',
   },
 ];
+
+/**
+ * Prefill for the "new custom drone" form: a heavy multirotor described by a typical
+ * operator spec sheet (payload up to 15 kg, 37–45 min empty, 23–27 min at 10 kg,
+ * 80–100 km/h empty / ~40 km/h loaded, radius 10–15 km, range 20 km, ceiling 400–500 m,
+ * wind 12–17 m/s). Not shown on the public dashboard.
+ */
+export const EXAMPLE_SPEC_DRONE: Omit<DroneProfile, 'id'> = {
+  name: 'Heavy multirotor 15 kg',
+  icon: '🛸',
+  type: 'multirotor',
+  description: '',
+  limits: {
+    maxWindSpeed: 12,
+    maxWindGusts: 17,
+    minTemperature: -20,
+    maxTemperature: 45,
+    maxPrecipitation: 2.5,
+    maxSnowfall: 0.5,
+    minVisibility: 800,
+    maxCloudCover: 100,
+    icingRisk: true,
+  },
+  nominalRange: 20,
+  nominalEndurance: 37,
+  hasThermalCamera: true,
+  hasIpProtection: true,
+  notes: '',
+  performance: {
+    maxPayloadKg: 15,
+    enduranceEmptyMin: { min: 37, max: 45 },
+    enduranceLoadedMin: { min: 23, max: 27 },
+    loadedPayloadKg: 10,
+    speedEmptyKmh: { min: 80, max: 100 },
+    speedFullKmh: 40,
+    radiusEmptyKm: 15,
+    radiusFullKm: 10,
+    maxRangeKm: 20,
+    ceilingM: { min: 400, max: 500 },
+  },
+};

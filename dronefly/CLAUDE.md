@@ -9,25 +9,32 @@ The original spec is `../drone-wx-instructions.md` (repo root). Read it for the 
 ## Stack
 - Next.js **16.2.3** (App Router), React 19.2, Tailwind v4 (`@import "tailwindcss"` in `globals.css`, no tailwind.config). See AGENTS.md: check `node_modules/next/dist/docs/` before using any Next API.
 - Leaflet 1.9 + OSM tiles (CSS invert filter gives the dark map). Marker icons are loaded from unpkg.
-- Weather: Open-Meteo `/v1/forecast`, called from the client. No key, no backend, no DB.
+- Weather: Open-Meteo `/v1/forecast`, called from the client. No key, no backend.
+- Accounts (optional layer): **Firebase Auth (Google only) + Firestore**, firebase JS SDK 12, all client-side. Config comes from `NEXT_PUBLIC_FIREBASE_*` (see `.env.example`; in prod in `apphosting.yaml` with BUILD availability). **Without the env vars the app runs public-only** (no sign-in UI), which is the guarantee that the public version stays unchanged.
 - Fonts: Exo 2 (labels) and JetBrains Mono (data) via `next/font`, both with cyrillic subsets.
 - Hosting: **Firebase App Hosting** (`firebase.json` → backend `can-drone-fly`, project `candronefly`, `apphosting.yaml` minInstances 0). The spec said Vercel; that was dropped.
 - `.agents/skills/` + `skills-lock.json` = Firebase agent skills (installed tooling, not app code).
 
 ## Commands (run from `dronefly/`)
 - `npm run dev` / `npm run build` / `npm start` / `npm run lint`
+- **Run npm/next/eslint through WSL**: `wsl.exe -e bash -lc 'cd /mnt/d/CanDroneFly/dronefly && source ~/.nvm/nvm.sh; <cmd>'`. WSL has Node 20 (Next 16 needs ≥20.9); Windows has Node 18 and Linux-only native binaries in node_modules.
+- Deploy rules: `firebase deploy --only firestore:rules` (firebase.json → `firestore.rules`).
 - `build` runs `scripts/generate-icons.mjs` first (sharp: `public/icon.svg` → icon-192/512 + apple-touch-icon). sharp is **not** a declared dependency; it only works because Next pulls it in transitively.
-- Typecheck: `node node_modules/typescript/bin/tsc --noEmit` (clean as of 2026-11-21). `npx tsc` fails on Windows because of the missing bin shims below.
+- Typecheck on Windows: `node node_modules/typescript/bin/tsc --noEmit`. Lint + build clean as of 2026-11-21.
 - ⚠ `node_modules` was installed under WSL/Linux. On Windows `eslint` and other bin shims are missing. Reinstall on the host OS you are using, or run from WSL.
 
 ## Architecture
-- `app/page.tsx`: the whole app, one `'use client'` page. Holds all state (location, weather, selected drone, selected forecast hour). It fetches on location change and every 15 min, builds `currentAssessments` (from `weather.current`) and `hourlyAssessments[drone][48]` (sliced from the current local hour), and finds the best windows. It recomputes everything on every render (no memoisation).
-- `app/layout.tsx`: fonts, metadata, PWA meta, `<PWARegister/>`. `app/manifest.ts` → `/manifest.webmanifest`.
+- `app/page.tsx`: the public dashboard, one `'use client'` page. Uses `allProfiles = DRONE_PROFILES + customDrones`; applies the user's default location/drone once per sign-in; accepts deep links `/?lat=&lng=&name=` and `/?drone=<id>` (from the profile page; query is stripped after reading). Holds all state (location, weather, selected drone, selected forecast hour). It fetches on location change and every 15 min, builds `currentAssessments` (from `weather.current`) and `hourlyAssessments[drone][48]` (sliced from the current local hour), and finds the best windows. It recomputes everything on every render (no memoisation).
+- `app/layout.tsx`: fonts, metadata, PWA meta, `<PWARegister/>`, `<Providers>` (`app/providers.tsx`: Language → Auth → UserData).
+- `app/profile/`: account page (sign in / out, preferences, saved locations CRUD, custom drones CRUD via `components/profile/DroneForm.tsx`). `layout.tsx` sets noindex metadata.
+- `lib/firebase.ts` (lazy init, `isFirebaseConfigured`), `lib/userData.ts` (Firestore CRUD and subscriptions), `contexts/AuthContext.tsx` (Google popup sign-in), `contexts/UserDataContext.tsx` (live data keyed by uid + two-way language sync), `components/AccountMenu.tsx` and `components/SavedLocationsMenu.tsx` (header).
+- Firestore: `users/{uid}` {displayName,email,photoURL,createdAt,updatedAt,prefs{lang,defaultLocationId,defaultDroneId}}, `users/{uid}/locations/{id}`, `users/{uid}/drones/{id}`. Custom drone app ids are `custom_<docId>`. `firestore.rules`: owner-only, with field whitelists and numeric bounds that mirror `BOUNDS` in DroneForm (keep both in sync). `app/manifest.ts` → `/manifest.webmanifest`.
 - `lib/weather.ts`: Open-Meteo fetch (`forecast_days=3` so the 48 h slice always fits, `wind_speed_unit=ms`, `timezone=auto`).
 - `lib/assessment.ts`: `assess(drone, WeatherPoint, lang)` is the core rules engine (NO_GO → CAUTION → GO), plus icing risk, visual sensor status and `findBestWindows` (≥2 consecutive GO hours).
 - `lib/thermal.ts`: thermal camera EFFECTIVE/DEGRADED/BLIND. `lib/range.ts`: `adjustRange` (wind penalty), `adjustEndurance` (cold penalty), `windRangeMultiplier` (per-heading, used by DroneDetail's range rose).
-- `lib/droneProfiles.ts`: the 5 profiles (fpv, mavic, heavy, fixed_small, fixed_large). Values match the spec.
-- `lib/i18n.ts`: typed `Translations`, uk + en. **All user-facing strings, including assessment reasons, come from here**, so the engine takes `lang`. `contexts/LanguageContext.tsx`: default `uk`, not persisted.
+- `lib/droneProfiles.ts`: the 5 profiles (fpv, mavic, heavy, fixed_small, fixed_large). Values match the spec. `EXAMPLE_SPEC_DRONE` = form prefill built from a real operator spec sheet (15 kg heavy multirotor).
+- **Detailed specs (`DroneProfile.performance`, custom drones only)**: payload-dependent model in `lib/performance.ts` (pure). Inputs as on a spec sheet: max payload; endurance empty and at a reference payload (min–max); max speed empty (min–max) and at full load; effective radius empty/full; max range; ceiling (min–max). "From–to" ranges → calculations use `min`. Model: linear interpolation by payload; cold −1 %/°C below 0 (max −30 %); wind = max(10 m, 80 m); out-and-back radius factor `(s²−a²)/(v·s)` with v = lower max speed at payload (worst case along-wind `1−(w/v)²`); NO_GO when wind ≥ 85 % of v ("no return"), CAUTION when wind cuts radius > 30 % or 80 m wind > limit. `assess(drone, wx, lang, { payloadKg })` returns `performance`; `adjustedRange` = radius after wind, `adjustedEndurance` = lower flight time after cold. Dashboard: `components/PayloadControl.tsx` (per-drone payload in localStorage `dronefly.payloads`, default = reference payload); DroneDetail shows a performance table + round-trip radius by heading. Verified against the spec sheet (0 kg → 37–45 min, 10 kg → 23–27 min, full → 40 km/h, radius 15 → 10 km).
+- `lib/i18n.ts`: typed `Translations`, uk + en. **All user-facing strings, including assessment reasons, come from here**, so the engine takes `lang`. `contexts/LanguageContext.tsx`: default `uk`, persisted in localStorage (`dronefly.lang`), synced to the profile when signed in.
 - `lib/wmoCodes.ts`: WMO code → description/icon/severity.
 - `components/`: Map (dynamic, ssr:false), WeatherPanel, DroneCards, DroneDetail, Timeline (48 cells per drone, click selects a forecast hour), BestWindows, WindIndicator, DonateButton, PWARegister.
 - `public/sw.js`: hand-written service worker. Network-first for Open-Meteo (offline fallback to last forecast), cache-first for `/_next/static` + listed assets.
@@ -36,6 +43,11 @@ The original spec is `../drone-wx-instructions.md` (repo root). Read it for the 
 
 ## Done (MVP + polish, git history up to 4a79aab)
 Weather fetch and panel · 5 profiles + assessment engine · drone cards · map picker (click/drag) + geolocation · 48 h timeline starting at the current hour, with per-hour detail · detail panel (reasons, thermal, sensor, icing, range/endurance, thresholds, directional range) · best windows · UA/EN i18n (the spec listed it as future work) · donate section · disclaimer/credits · PWA (manifest, icons, SW, iOS meta) · 15-min auto refresh.
+Detailed drone specs with payload model (2026-11-21, needs rules redeploy).
+Phase 1 accounts (2026-11-21, not deployed yet): Google sign-in, /profile, saved locations, custom drones (shown on the dashboard with a CUSTOM badge), synced preferences, Firestore rules. Donations hidden (`lib/features.ts`).
+
+## Next: Phase 2 (requested by user)
+Flight path planner for signed-in users: build a route on the map with very good UX, more complex calculations, and a weather report for the current conditions along the path. Not designed yet.
 
 ## Known issues / gaps (found while reviewing the code, 2026-11-21)
 Bugs / correctness:
@@ -52,10 +64,10 @@ Production readiness:
 - No tests at all (the rules engine is pure and easy to unit-test). No CI. No error boundary. No retry/backoff on the fetch.
 - No SEO/OG metadata, no `metadataBase`, no viewport/themeColor export, `lang` on `<html>` is fixed to `uk`.
 - Layout is desktop-first: the map/weather row is a fixed 40/60 split with 380px height, which breaks on phones.
-- Language and last location are not persisted (localStorage).
+- Last location isn't persisted for anonymous users. Firestore has no per-user document count limit (rules can't count), so add a cap before abuse becomes a concern.
+- Firestore rules have not been tested with the emulator yet.
 - No analytics/monitoring. Open-Meteo's free tier is non-commercial; check its terms against a donation-funded app and consider attribution and rate limits.
 - Leaflet marker images come from unpkg; bundle them locally for offline/PWA use.
-- `.claude/settings.local.json` holds Linux/WSL paths. Several new files (firebase config, AGENTS.md, CLAUDE.md, .agents) are untracked.
 
 ## Conventions
 - Commit style: `ADD: …` / `FIX: …`.

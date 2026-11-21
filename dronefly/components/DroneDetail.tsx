@@ -3,6 +3,7 @@
 import { DroneProfile, FlyabilityAssessment } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { windRangeMultiplier } from '@/lib/range';
+import { roundTripFactor, NO_RETURN_RATIO } from '@/lib/performance';
 
 interface DroneDetailProps {
   drone: DroneProfile;
@@ -51,7 +52,7 @@ function windPctColor(pct: number) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border border-[#1e2d45] p-3">
-      <div className="text-[#4a6080] text-xs font-mono uppercase mb-2">// {title}</div>
+      <div className="text-[#4a6080] text-xs font-mono uppercase mb-2">{'// '}{title}</div>
       {children}
     </div>
   );
@@ -73,6 +74,18 @@ function ImpactRow({ label, value, pct }: { label: string; value: string; pct: n
   );
 }
 
+function PerfRow({ label, value, sub, color, strong }: { label: string; value: string; sub?: string; color?: string; strong?: boolean }) {
+  return (
+    <div className="flex justify-between items-baseline gap-3 py-1 border-b border-[#1e2d45]/60">
+      <span className="text-[#4a6080]">{label}</span>
+      <span className="text-right">
+        <span className={strong ? 'font-bold text-sm' : ''} style={{ color: color ?? '#c8d0e0' }}>{value}</span>
+        {sub && <span className="block text-[10px] text-[#4a6080]">{sub}</span>}
+      </span>
+    </div>
+  );
+}
+
 /** Returns which compass label the wind is coming FROM */
 function windSourceLabel(windFromDeg: number, dirLabels: string[]): string {
   const idx = Math.round(((windFromDeg % 360) + 360) % 360 / 45) % 8;
@@ -84,9 +97,18 @@ export default function DroneDetail({ drone, assessment: a, windSpeed, windDirec
   const sc = statusColor[a.status];
   const notes = lang === 'uk' ? (drone.notesUk ?? drone.notes) : drone.notes;
 
-  // Consequence percentages
-  const rangeLoss = Math.max(0, Math.round((1 - a.adjustedRange / drone.nominalRange) * 100));
-  const enduranceLoss = Math.max(0, Math.round((1 - a.adjustedEndurance / drone.nominalEndurance) * 100));
+  const perf = a.performance;
+  const kmU = lang === 'uk' ? 'км' : 'km';
+  const minU = lang === 'uk' ? 'хв' : 'min';
+  const kmhU = lang === 'uk' ? 'км/год' : 'km/h';
+  const msU = lang === 'uk' ? 'м/с' : 'm/s';
+  const mU = lang === 'uk' ? 'м' : 'm';
+
+  // Consequence percentages (drones with specs: relative to specs at the chosen payload)
+  const baseRange = perf ? perf.radiusNominalKm : drone.nominalRange;
+  const baseEndurance = perf ? perf.enduranceNominal.min : drone.nominalEndurance;
+  const rangeLoss = baseRange > 0 ? Math.max(0, Math.round((1 - a.adjustedRange / baseRange) * 100)) : 0;
+  const enduranceLoss = baseEndurance > 0 ? Math.max(0, Math.round((1 - a.adjustedEndurance / baseEndurance) * 100)) : 0;
   const visualLoss = a.sensorStatus === 'BLIND' ? 100 : a.sensorStatus === 'DEGRADED' ? 50 : 0;
   const thermalLoss = a.thermalEffectiveness === 'BLIND' ? 100 : a.thermalEffectiveness === 'DEGRADED' ? 50 : 0;
   const icingPct = a.icingRisk === 'LIKELY' ? 85 : a.icingRisk === 'POSSIBLE' ? 40 : 0;
@@ -98,12 +120,20 @@ export default function DroneDetail({ drone, assessment: a, windSpeed, windDirec
   const dirArrows = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
   const dirDegrees = [0, 45, 90, 135, 180, 225, 270, 315];
 
+  // Drones with specs: out-and-back radius (round trip) using the drone's own speed at this payload.
+  // Others: legacy one-way multiplier based on a typical cruise speed per type.
   const windDirs = dirDegrees.map((heading) => {
+    if (perf) {
+      const factor = roundTripFactor(heading, windDirection, perf.windMs, perf.airspeedMs);
+      const rangekm = Math.round(perf.radiusStillKm * factor * 10) / 10;
+      return { rangekm, pct: Math.round((factor - 1) * 100), noReturn: factor === 0 };
+    }
     const factor = windRangeMultiplier(heading, windDirection, windSpeed, drone.type);
     const rangekm = Math.round(drone.nominalRange * factor * 10) / 10;
     const pct = Math.round((factor - 1) * 100);
-    return { rangekm, pct };
+    return { rangekm, pct, noReturn: false };
   });
+  const roseWind = perf ? perf.windMs : windSpeed;
 
   const windFromLabel = windSourceLabel(windDirection, dirLabels);
   const bestIdx = windDirs.reduce((bi, d, i) => d.pct > windDirs[bi].pct ? i : bi, 0);
@@ -133,7 +163,7 @@ export default function DroneDetail({ drone, assessment: a, windSpeed, windDirec
 
           {hasConsequences && (
             <div className="border-t border-[#1e2d45] pt-2 mt-1">
-              <div className="text-[#4a6080] text-xs font-mono mb-2">// {tr.consequences}</div>
+              <div className="text-[#4a6080] text-xs font-mono mb-2">{'// '}{tr.consequences}</div>
               <div className="space-y-0.5">
                 {rangeLoss > 0 && (
                   <ImpactRow label={tr.impactRange} value={`−${rangeLoss}%`} pct={rangeLoss} />
@@ -223,10 +253,32 @@ export default function DroneDetail({ drone, assessment: a, windSpeed, windDirec
         </Section>
       </div>
 
+      {/* Performance at the chosen payload — drones with detailed specs */}
+      {perf && (
+        <Section title={tr.perfTitle(perf.payloadKg)}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 text-xs font-mono">
+            <PerfRow label={tr.perfEndurance} value={`${perf.endurance.min}–${perf.endurance.max} ${minU}`}
+              sub={perf.endurance.min !== perf.enduranceNominal.min ? `${tr.nom} ${perf.enduranceNominal.min}–${perf.enduranceNominal.max}` : undefined} />
+            <PerfRow label={tr.perfMaxSpeed} value={`${perf.maxSpeedKmh.min}–${perf.maxSpeedKmh.max} ${kmhU}`} sub={`${perf.airspeedMs} ${msU}`} />
+            <PerfRow label={tr.perfRadiusNominal} value={`${perf.radiusNominalKm} ${kmU}`}
+              sub={perf.limitedByRange ? tr.perfLimitedByRange(drone.performance!.maxRangeKm) : undefined} />
+            <PerfRow label={tr.perfRadiusStill} value={`${perf.radiusStillKm} ${kmU}`} />
+            <PerfRow label={tr.perfRadiusWind} value={`${perf.radiusWindKm} ${kmU}`} strong
+              color={perf.windRatio >= NO_RETURN_RATIO ? '#ff3344' : perf.radiusWindKm < perf.radiusStillKm * 0.7 ? '#ffaa00' : '#00ff88'} />
+            <PerfRow label={tr.perfWindUsed} value={`${perf.windMs} ${msU}`} />
+            <PerfRow label={tr.perfWindRatio} value={`${Math.round(perf.windRatio * 100)}%`}
+              color={perf.windRatio >= NO_RETURN_RATIO ? '#ff3344' : perf.windRatio >= 0.55 ? '#ffaa00' : '#00ff88'} />
+            <PerfRow label={tr.perfCeiling} value={`${drone.performance!.ceilingM.min}–${drone.performance!.ceilingM.max} ${mU}`} />
+          </div>
+          <div className="text-[10px] font-mono text-[#2d4060] mt-2 leading-relaxed">{tr.perfModelNote}</div>
+        </Section>
+      )}
+
       {/* Wind directional range panel — full width */}
-      <Section title={tr.windRangeImpact}>
+      <Section title={perf ? tr.roundTripTitle : tr.windRangeImpact}>
+        {perf && <div className="text-[10px] font-mono text-[#2d4060] mb-2">{tr.roundTripNote}</div>}
         <div className="text-[#4a6080] text-xs font-mono mb-3">
-          {tr.windFrom}: {windFromLabel} {windSpeed.toFixed(1)} m/s
+          {tr.windFrom}: {windFromLabel} {roseWind.toFixed(1)} m/s
           <span className="ml-4 text-[#00ff88]">▲ {dirLabels[bestIdx]} {dirArrows[bestIdx]} {windDirs[bestIdx].rangekm} km ({windDirs[bestIdx].pct >= 0 ? '+' : ''}{windDirs[bestIdx].pct}%)</span>
           <span className="ml-4 text-[#ff3344]">▼ {dirLabels[worstIdx]} {dirArrows[worstIdx]} {windDirs[worstIdx].rangekm} km ({windDirs[worstIdx].pct}%)</span>
         </div>
@@ -247,10 +299,16 @@ export default function DroneDetail({ drone, assessment: a, windSpeed, windDirec
               >
                 <div className="text-[#4a6080] text-xs font-mono">{dirLabels[i]}</div>
                 <div className="text-lg my-0.5" style={{ color }}>{dirArrows[i]}</div>
-                <div className="text-white text-xs font-mono font-bold">{rangekm}<span className="text-[#4a6080] text-xs font-normal ml-0.5">km</span></div>
-                <div className="text-xs font-mono font-bold" style={{ color }}>
-                  {pct >= 0 ? '+' : ''}{pct}%
-                </div>
+                {windDirs[i].noReturn ? (
+                  <div className="text-[10px] font-mono font-bold text-[#ff3344] leading-tight py-1">{tr.cannotReturn}</div>
+                ) : (
+                  <>
+                    <div className="text-white text-xs font-mono font-bold">{rangekm}<span className="text-[#4a6080] text-xs font-normal ml-0.5">km</span></div>
+                    <div className="text-xs font-mono font-bold" style={{ color }}>
+                      {pct >= 0 ? '+' : ''}{pct}%
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}

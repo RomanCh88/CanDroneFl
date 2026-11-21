@@ -1,0 +1,123 @@
+rules_version = '2';
+
+// DroneFly — every document lives under users/{uid} and is private to its owner.
+// Value bounds mirror components/profile/DroneForm.tsx (BOUNDS).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function num(v, lo, hi) {
+      return (v is int || v is float) && v >= lo && v <= hi;
+    }
+
+    function str(v, lo, hi) {
+      return v is string && v.size() >= lo && v.size() <= hi;
+    }
+
+    function optId(m, key) {
+      return !(key in m) || m[key] == null || str(m[key], 1, 128);
+    }
+
+    function validPrefs(p) {
+      return p is map
+        && p.keys().hasOnly(['lang', 'defaultLocationId', 'defaultDroneId'])
+        && (!('lang' in p) || p.lang == null || p.lang in ['uk', 'en'])
+        && optId(p, 'defaultLocationId')
+        && optId(p, 'defaultDroneId');
+    }
+
+    function validUser(d) {
+      return d.keys().hasOnly(['displayName', 'email', 'photoURL', 'createdAt', 'updatedAt', 'prefs'])
+        && (!('displayName' in d) || str(d.displayName, 0, 200))
+        && (!('email' in d) || str(d.email, 0, 320))
+        && (!('photoURL' in d) || str(d.photoURL, 0, 2048))
+        && (!('prefs' in d) || validPrefs(d.prefs));
+    }
+
+    function validLocation(d) {
+      return d.keys().hasOnly(['name', 'lat', 'lng', 'createdAt'])
+        && str(d.name, 1, 60)
+        && num(d.lat, -90, 90)
+        && num(d.lng, -180, 180);
+    }
+
+    function validLimits(l) {
+      return l is map
+        && l.keys().hasOnly(['maxWindSpeed', 'maxWindGusts', 'minTemperature', 'maxTemperature',
+                             'maxPrecipitation', 'maxSnowfall', 'minVisibility', 'maxCloudCover', 'icingRisk'])
+        && num(l.maxWindSpeed, 0, 60)
+        && num(l.maxWindGusts, 0, 80)
+        && num(l.minTemperature, -60, 60)
+        && num(l.maxTemperature, -40, 70)
+        && l.minTemperature < l.maxTemperature
+        && num(l.maxPrecipitation, 0, 50)
+        && num(l.maxSnowfall, 0, 20)
+        && num(l.minVisibility, 0, 50000)
+        && num(l.maxCloudCover, 0, 100)
+        && l.icingRisk is bool;
+    }
+
+    function specRange(r, lo, hi) {
+      return r is map && r.keys().hasOnly(['min', 'max']) && r.keys().hasAll(['min', 'max'])
+        && num(r.min, lo, hi) && num(r.max, lo, hi) && r.min <= r.max;
+    }
+
+    function validPerformance(p) {
+      return p is map
+        && p.keys().hasOnly(['maxPayloadKg', 'enduranceEmptyMin', 'enduranceLoadedMin', 'loadedPayloadKg',
+                             'speedEmptyKmh', 'speedFullKmh', 'radiusEmptyKm', 'radiusFullKm',
+                             'maxRangeKm', 'ceilingM'])
+        && num(p.maxPayloadKg, 0.1, 500)
+        && specRange(p.enduranceEmptyMin, 1, 3000)
+        && specRange(p.enduranceLoadedMin, 1, 3000)
+        && num(p.loadedPayloadKg, 0.1, 500)
+        && p.loadedPayloadKg <= p.maxPayloadKg
+        && specRange(p.speedEmptyKmh, 1, 500)
+        && num(p.speedFullKmh, 1, 500)
+        && num(p.radiusEmptyKm, 0.1, 2000)
+        && num(p.radiusFullKm, 0.1, 2000)
+        && num(p.maxRangeKm, 0.1, 2000)
+        && specRange(p.ceilingM, 1, 10000);
+    }
+
+    function validDrone(d) {
+      return d.keys().hasOnly(['name', 'icon', 'type', 'description', 'limits', 'nominalRange',
+                               'nominalEndurance', 'hasThermalCamera', 'hasIpProtection', 'notes',
+                               'performance', 'createdAt', 'updatedAt'])
+        && str(d.name, 1, 40)
+        && str(d.icon, 1, 16)
+        && d.type in ['fpv', 'multirotor', 'fixed_wing']
+        && (!('description' in d) || str(d.description, 0, 200))
+        && validLimits(d.limits)
+        && num(d.nominalRange, 0.1, 2000)
+        && num(d.nominalEndurance, 1, 3000)
+        && d.hasThermalCamera is bool
+        && d.hasIpProtection is bool
+        && (!('notes' in d) || str(d.notes, 0, 300))
+        && (!('performance' in d) || validPerformance(d.performance));
+    }
+
+    match /users/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validUser(request.resource.data);
+
+      match /locations/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validLocation(request.resource.data);
+      }
+
+      match /drones/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validDrone(request.resource.data);
+      }
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

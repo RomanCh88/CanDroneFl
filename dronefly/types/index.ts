@@ -22,6 +22,70 @@ export interface DroneProfile {
   hasThermalCamera: boolean;
   hasIpProtection: boolean;
   notes: string;
+  /** True for user-defined drones stored in Firestore (signed-in users only). */
+  custom?: boolean;
+  /** Detailed specs (payload-dependent). When present, range/endurance come from lib/performance.ts. */
+  performance?: DronePerformance;
+}
+
+/** A spec given as "from–to" (e.g. 37–45 min). Calculations use `min` (conservative). */
+export interface SpecRange {
+  min: number;
+  max: number;
+}
+
+/** Manufacturer / field specs, entered the way operators read them from a spec sheet. */
+export interface DronePerformance {
+  maxPayloadKg: number;          // e.g. 15
+  enduranceEmptyMin: SpecRange;  // flight time without payload, e.g. 37–45
+  enduranceLoadedMin: SpecRange; // flight time with a reference payload, e.g. 23–27
+  loadedPayloadKg: number;       // that reference payload, e.g. 10
+  speedEmptyKmh: SpecRange;      // max speed without payload, e.g. 80–100
+  speedFullKmh: number;          // max speed at full payload, e.g. 40
+  radiusEmptyKm: number;         // effective radius without payload, e.g. 15
+  radiusFullKm: number;          // effective radius at full payload, e.g. 10
+  maxRangeKm: number;            // absolute range / link limit, e.g. 20
+  ceilingM: SpecRange;           // practical ceiling, e.g. 400–500
+}
+
+/** Performance at a given payload and weather (output of lib/performance.ts). */
+export interface PerformanceResult {
+  payloadKg: number;
+  /** Flight time at this payload, before weather (min). */
+  enduranceNominal: SpecRange;
+  /** Flight time after cold penalty (min). */
+  endurance: SpecRange;
+  /** Max speed at this payload (km/h). */
+  maxSpeedKmh: SpecRange;
+  /** Airspeed used for wind maths (m/s) = lower max speed at this payload. */
+  airspeedMs: number;
+  /** Wind used for the calculation: max of 10 m and 80 m wind (m/s). */
+  windMs: number;
+  /** Effective radius at this payload, no weather (km). */
+  radiusNominalKm: number;
+  /** After cold, before wind (km). */
+  radiusStillKm: number;
+  /** After cold and worst-case (along-wind) out-and-back wind (km). */
+  radiusWindKm: number;
+  /** True when the radius was capped by maxRangeKm. */
+  limitedByRange: boolean;
+  /** Wind / airspeed ratio; ≥ 0.85 means return is not guaranteed. */
+  windRatio: number;
+}
+
+/** A user's saved position (Firestore: users/{uid}/locations/{id}). */
+export interface SavedLocation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+}
+
+/** Synced preferences (Firestore: users/{uid}.prefs). */
+export interface UserPrefs {
+  lang?: 'uk' | 'en';
+  defaultLocationId?: string | null;
+  defaultDroneId?: string | null;
 }
 
 export interface WeatherData {
@@ -75,6 +139,8 @@ export interface FlyabilityAssessment {
   icingRisk: 'NONE' | 'POSSIBLE' | 'LIKELY';
   sensorStatus: 'CLEAR' | 'DEGRADED' | 'BLIND';
   sensorReasons: string[];
+  /** Only for drones with detailed specs. */
+  performance?: PerformanceResult;
 }
 
 export interface HourlyAssessment {

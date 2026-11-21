@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Exo_2, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import PWARegister from "@/components/PWARegister";
+import Providers from "./providers";
 
 const exo2 = Exo_2({
   variable: "--font-exo2",
@@ -44,7 +45,7 @@ export default function RootLayout({
     >
       <body className="min-h-screen" style={{ background: "#0a0f1a", color: "#c8d0e0" }}>
         <PWARegister />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

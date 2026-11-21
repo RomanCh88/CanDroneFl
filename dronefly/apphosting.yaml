@@ -8,6 +8,29 @@ runConfig:
   # memoryMiB: 512
 
 # Environment variables and secrets.
+# Firebase web config for sign-in. NEXT_PUBLIC_* are inlined at BUILD time, so BUILD is required.
+# These values are public by design (security = Auth + firestore.rules).
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyAo1k1LNbT3jVxRlAZLDufRikUHIDFfKsI"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "candronefly.firebaseapp.com"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "candronefly"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "candronefly.firebasestorage.app"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "228737059549"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:228737059549:web:882f219938334916822934"
+    availability: [BUILD, RUNTIME]
+
+# (original template below)
 # env:
   # Configure environment variables.
   # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment

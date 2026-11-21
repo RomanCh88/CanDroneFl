@@ -36,7 +36,12 @@ export default function DroneCards({ profiles, assessments, selectedId, onSelect
               isSelected ? 'ring-1 ring-white/20' : 'opacity-80 hover:opacity-100'
             }`}
           >
-            <div className="text-lg sm:text-xl mb-1">{drone.icon}</div>
+            <div className="flex items-start justify-between gap-1 mb-1">
+              <span className="text-lg sm:text-xl">{drone.icon}</span>
+              {drone.custom && (
+                <span className="text-[9px] font-mono border border-[#00b4d8]/50 text-[#00b4d8] px-1 leading-tight">{tr.customBadge}</span>
+              )}
+            </div>
             <div className="text-[#c8d0e0] text-xs font-mono mb-2 leading-tight">{name}</div>
             <div className={`text-sm sm:text-base lg:text-lg font-bold font-mono leading-tight ${colors.text}`}>
               {a.status === 'GO' ? tr.statusGo : a.status === 'CAUTION' ? tr.statusCaution : tr.statusNoGo}
@@ -47,6 +52,9 @@ export default function DroneCards({ profiles, assessments, selectedId, onSelect
             <div className="text-[#4a6080] text-xs font-mono">
               ⏱ {a.adjustedEndurance} min
             </div>
+            {a.performance && (
+              <div className="text-[#00b4d8] text-xs font-mono">⚖ {a.performance.payloadKg} {lang === 'uk' ? 'кг' : 'kg'}</div>
+            )}
           </button>
         );
       })}

@@ -1,13 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { WeatherData, FlyabilityAssessment, HourlyAssessment, Location } from '@/types';
+import { WeatherData, FlyabilityAssessment, HourlyAssessment, Location, DroneProfile } from '@/types';
 import { fetchWeather } from '@/lib/weather';
 import { DRONE_PROFILES } from '@/lib/droneProfiles';
 import { assess, findBestWindows } from '@/lib/assessment';
-import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
-import { Lang } from '@/lib/i18n';
+import { defaultPayload } from '@/lib/performance';
+import PayloadControl from '@/components/PayloadControl';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useUserData } from '@/contexts/UserDataContext';
+import { useAuth } from '@/contexts/AuthContext';
+import AccountMenu from '@/components/AccountMenu';
+import SavedLocationsMenu from '@/components/SavedLocationsMenu';
 import WeatherPanel from '@/components/WeatherPanel';
 import DroneCards from '@/components/DroneCards';
 import DroneDetail from '@/components/DroneDetail';
@@ -20,6 +25,7 @@ const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false });
 
 const DEFAULT_LOCATION: Location = { lat: 50.4501, lng: 30.5234, name: 'Київ, Україна' };
 const REFRESH_INTERVAL = 15 * 60 * 1000;
+const PAYLOAD_KEY = 'dronefly.payloads';
 
 function buildWeatherPoint(wx: WeatherData['current']) {
   return {
@@ -38,8 +44,10 @@ function buildWeatherPoint(wx: WeatherData['current']) {
   };
 }
 
-function HomeInner() {
+export default function Home() {
   const { lang, setLang, tr } = useLanguage();
+  const { user, loading: authLoading } = useAuth();
+  const { ready: userReady, prefs, locations, customDrones } = useUserData();
   const [location, setLocation] = useState<Location>(DEFAULT_LOCATION);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +56,24 @@ function HomeInner() {
   const [forecastHourIndex, setForecastHourIndex] = useState<number | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Payload per drone (drones with detailed specs only), remembered on this device.
+  // Lazy init is safe: payload only affects output after weather loads on the client.
+  const [payloads, setPayloads] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {};
+    try { return JSON.parse(localStorage.getItem(PAYLOAD_KEY) ?? '{}'); } catch { return {}; }
+  });
+  const setPayload = useCallback((droneId: string, kg: number) => {
+    setPayloads(prev => {
+      const next = { ...prev, [droneId]: kg };
+      try { localStorage.setItem(PAYLOAD_KEY, JSON.stringify(next)); } catch { /* storage unavailable */ }
+      return next;
+    });
+  }, []);
+  const payloadFor = useCallback(
+    (d: DroneProfile) => (d.performance ? Math.min(payloads[d.id] ?? defaultPayload(d.performance), d.performance.maxPayloadKg) : undefined),
+    [payloads]
+  );
 
   const loadWeather = useCallback(async (lat: number, lng: number) => {
     setLoading(true);
@@ -70,6 +96,53 @@ function HomeInner() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [location, loadWeather]);
 
+  // Built-in profiles + the signed-in user's custom drones.
+  const allProfiles: DroneProfile[] = useMemo(() => [...DRONE_PROFILES, ...customDrones], [customDrones]);
+
+  // If the selected drone disappears (deleted custom drone / sign-out), fall back to the first one.
+  // Wait while custom drones may still be loading, so a deep-linked custom drone isn't dropped.
+  const profilesSettled = !authLoading && (!user || userReady);
+  useEffect(() => {
+    if (!profilesSettled) return;
+    if (!allProfiles.some(p => p.id === selectedDroneId)) {
+      setSelectedDroneId(allProfiles[0].id);
+      setForecastHourIndex(null);
+    }
+  }, [allProfiles, selectedDroneId, profilesSettled]);
+
+  // Deep link from the profile page: /?lat=..&lng=..&name=..  or  /?drone=<id>
+  const deepLinked = useRef(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const lat = Number(params.get('lat'));
+    const lng = Number(params.get('lng'));
+    if (params.has('lat') && params.has('lng') && Number.isFinite(lat) && Number.isFinite(lng)
+        && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      setLocation({ lat, lng, name: params.get('name')?.slice(0, 60) || `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+      deepLinked.current = true;
+    }
+    const drone = params.get('drone');
+    if (drone) {
+      setSelectedDroneId(drone);
+      deepLinked.current = true;
+    }
+    if (params.size > 0) window.history.replaceState(null, '', window.location.pathname);
+  }, []);
+
+  // Apply the user's default location / drone once per sign-in (unless a deep link chose them).
+  const defaultsApplied = useRef(false);
+  useEffect(() => {
+    if (!userReady) { defaultsApplied.current = false; return; }
+    if (defaultsApplied.current) return;
+    defaultsApplied.current = true;
+    if (deepLinked.current) return;
+    const loc = locations.find(l => l.id === prefs.defaultLocationId);
+    if (loc) setLocation({ lat: loc.lat, lng: loc.lng, name: loc.name });
+    if (prefs.defaultDroneId && allProfiles.some(p => p.id === prefs.defaultDroneId)) {
+      setSelectedDroneId(prefs.defaultDroneId);
+    }
+  }, [userReady, locations, prefs, allProfiles]);
+
   const handleLocationChange = useCallback((lat: number, lng: number) => {
     setLocation({ lat, lng, name: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
   }, []);
@@ -81,10 +154,6 @@ function HomeInner() {
       () => {}
     );
   }, [lang]);
-
-  const currentAssessments: FlyabilityAssessment[] = weather
-    ? DRONE_PROFILES.map(drone => assess(drone, buildWeatherPoint(weather.current), lang))
-    : [];
 
   // Find the index of the current hour so the timeline starts from now, not midnight.
   // Open-Meteo returns local-time strings (timezone: auto), so compare using local clock.
@@ -101,8 +170,18 @@ function HomeInner() {
       })()
     : 0;
 
+  const currentAssessments: FlyabilityAssessment[] = weather
+    ? allProfiles.map(drone => assess(
+        drone,
+        // `current` has no 80 m wind; use the current hour's forecast value.
+        { ...buildWeatherPoint(weather.current), windSpeed80: weather.hourly.wind_speed_80m?.[currentHourStart] },
+        lang,
+        { payloadKg: payloadFor(drone) }
+      ))
+    : [];
+
   const hourlyAssessments: HourlyAssessment[][] = weather
-    ? DRONE_PROFILES.map(drone =>
+    ? allProfiles.map(drone =>
         weather.hourly.time.slice(currentHourStart, currentHourStart + 48).map((time, i) => {
           const ri = currentHourStart + i; // real index into the full arrays
           return ({
@@ -120,7 +199,8 @@ function HomeInner() {
             windGusts: weather.hourly.wind_gusts_10m[ri],
             windDirection: weather.hourly.wind_direction_10m[ri],
             weatherCode: weather.hourly.weather_code[ri],
-          }, lang),
+            windSpeed80: weather.hourly.wind_speed_80m?.[ri],
+          }, lang, { payloadKg: payloadFor(drone) }),
           weather: {
             temperature: weather.hourly.temperature_2m[ri],
             windSpeed: weather.hourly.wind_speed_10m[ri],
@@ -144,8 +224,8 @@ function HomeInner() {
     setForecastHourIndex(null);
   }, []);
 
-  const selectedDroneIndex = DRONE_PROFILES.findIndex(p => p.id === selectedDroneId);
-  const selectedDrone = DRONE_PROFILES[selectedDroneIndex];
+  const selectedDroneIndex = allProfiles.findIndex(p => p.id === selectedDroneId);
+  const selectedDrone = allProfiles[selectedDroneIndex];
   const selectedAssessment = currentAssessments[selectedDroneIndex];
   const selectedHourly = hourlyAssessments[selectedDroneIndex] ?? [];
   const bestWindows = selectedHourly.length > 0
@@ -179,6 +259,7 @@ function HomeInner() {
           >
             {tr.useMyLocation}
           </button>
+          <SavedLocationsMenu current={location} onSelect={setLocation} />
         </div>
 
         {lastUpdated && (
@@ -206,6 +287,7 @@ function HomeInner() {
             <span style={{ color: lang === 'en' ? '#00b4d8' : '#4a6080' }}>EN</span>
           </button>
 
+          <AccountMenu />
           {SHOW_DONATIONS && <DonateButton compact />}
         </div>
       </header>
@@ -241,7 +323,7 @@ function HomeInner() {
               {tr.currentConditions}
             </div>
             <DroneCards
-              profiles={DRONE_PROFILES}
+              profiles={allProfiles}
               assessments={currentAssessments}
               selectedId={selectedDroneId}
               onSelect={handleDroneSelect}
@@ -254,6 +336,13 @@ function HomeInner() {
             <div className="text-xs mb-3" style={{ color: '#4a6080', fontFamily: 'var(--font-jetbrains)' }}>
               {tr.platformDetail(droneName.toUpperCase())}
             </div>
+            {selectedDrone.performance && (
+              <PayloadControl
+                perf={selectedDrone.performance}
+                value={payloadFor(selectedDrone) ?? 0}
+                onChange={kg => setPayload(selectedDrone.id, kg)}
+              />
+            )}
             <DroneDetail
               drone={selectedDrone}
               assessment={selectedAssessment}
@@ -269,7 +358,7 @@ function HomeInner() {
               {tr.forecastTimeline}
             </div>
             <Timeline
-              profiles={DRONE_PROFILES}
+              profiles={allProfiles}
               hourlyData={hourlyAssessments}
               selectedDroneId={selectedDroneId}
               onDroneSelect={handleDroneSelect}
@@ -336,13 +425,5 @@ function HomeInner() {
         </footer>
       </div>
     </div>
-  );
-}
-
-export default function Home() {
-  return (
-    <LanguageProvider>
-      <HomeInner />
-    </LanguageProvider>
   );
 }

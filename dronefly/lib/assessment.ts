@@ -1,9 +1,10 @@
 import { DroneProfile, FlyabilityAssessment } from '@/types';
 import { assessThermal } from './thermal';
 import { adjustRange, adjustEndurance } from './range';
+import { computePerformance, defaultPayload, NO_RETURN_RATIO, WIND_RADIUS_CAUTION } from './performance';
 import { Lang, getTranslations } from './i18n';
 
-interface WeatherPoint {
+export interface WeatherPoint {
   temperature: number;
   humidity: number;
   dewPoint: number;
@@ -16,6 +17,8 @@ interface WeatherPoint {
   windGusts: number;
   windDirection: number;
   weatherCode: number;
+  /** Wind at 80 m (m/s), used for drones that fly higher. */
+  windSpeed80?: number;
 }
 
 function assessIcingRisk(
@@ -78,11 +81,21 @@ function assessSensor(
   return { status: 'CLEAR', reasons: [] };
 }
 
-export function assess(drone: DroneProfile, wx: WeatherPoint, lang: Lang = 'uk'): FlyabilityAssessment {
+export interface AssessOptions {
+  /** Payload for drones with detailed specs; defaults to the spec's reference payload. */
+  payloadKg?: number;
+}
+
+export function assess(drone: DroneProfile, wx: WeatherPoint, lang: Lang = 'uk', opts: AssessOptions = {}): FlyabilityAssessment {
   const tr = getTranslations(lang);
   const noGoReasons: string[] = [];
   const cautionReasons: string[] = [];
   const { limits } = drone;
+
+  // Payload/weather-dependent performance (only for drones with detailed specs).
+  const perf = drone.performance
+    ? computePerformance(drone.performance, opts.payloadKg ?? defaultPayload(drone.performance), wx)
+    : undefined;
 
   // --- NO_GO checks ---
   if (wx.windSpeed > limits.maxWindSpeed) {
@@ -124,62 +137,66 @@ export function assess(drone: DroneProfile, wx: WeatherPoint, lang: Lang = 'uk')
     noGoReasons.push(tr.icingHighRisk(wx.temperature.toFixed(1), wx.humidity));
   }
 
-  if (noGoReasons.length > 0) {
-    const thermal = assessThermal(wx.precipitation, wx.visibility, wx.snowfall, wx.humidity, wx.temperature, lang);
-    const sensor = assessSensor(wx.visibility, wx.precipitation, wx.cloudCover, wx.weatherCode, lang);
-    return {
-      status: 'NO_GO',
-      reasons: noGoReasons,
-      thermalEffectiveness: drone.hasThermalCamera ? thermal.effectiveness : 'BLIND',
-      thermalReasons: drone.hasThermalCamera ? thermal.reasons : [tr.noThermalCamera],
-      adjustedRange: adjustRange(drone.nominalRange, wx.windSpeed, drone.type),
-      adjustedEndurance: adjustEndurance(drone.nominalEndurance, wx.temperature),
-      icingRisk,
-      sensorStatus: sensor.status,
-      sensorReasons: sensor.reasons,
-    };
+  // Wind vs the drone's own speed at this payload: it must be able to fly back.
+  if (perf && perf.windRatio >= NO_RETURN_RATIO) {
+    noGoReasons.push(tr.windNoReturn(perf.windMs.toFixed(1), perf.airspeedMs.toFixed(1), perf.payloadKg));
   }
 
-  // --- CAUTION checks ---
-  if (wx.windSpeed > limits.maxWindSpeed * 0.8) {
-    cautionReasons.push(tr.windApproachingLimit(wx.windSpeed.toFixed(1), limits.maxWindSpeed));
-  }
-  if (wx.windGusts > limits.maxWindGusts * 0.8) {
-    cautionReasons.push(tr.gustsApproachingLimit(wx.windGusts.toFixed(1), limits.maxWindGusts));
-  }
-  if (wx.temperature < limits.minTemperature + 5) {
-    cautionReasons.push(tr.tempNearMin(wx.temperature.toFixed(1), limits.minTemperature));
-  }
-  if (wx.precipitation > 0 && wx.precipitation <= limits.maxPrecipitation) {
-    cautionReasons.push(tr.precipPresent(wx.precipitation.toFixed(1)));
-  }
-  if (wx.visibility < limits.minVisibility * 2) {
-    cautionReasons.push(tr.visibilityBelow2x(wx.visibility));
-  }
-  if (wx.humidity > 85) {
-    cautionReasons.push(tr.highHumidity(wx.humidity));
-  }
-  if (wx.temperature >= -2 && wx.temperature <= 5 && wx.humidity > 80) {
-    cautionReasons.push(tr.potentialIcing(wx.temperature.toFixed(1), wx.humidity));
-  }
-  const dewPointSpread = wx.temperature - wx.dewPoint;
-  if (dewPointSpread < 3) {
-    cautionReasons.push(tr.dewPointSpreadCaution(dewPointSpread.toFixed(1)));
+  // --- CAUTION checks (only reported when there is no NO_GO) ---
+  if (noGoReasons.length === 0) {
+    if (wx.windSpeed > limits.maxWindSpeed * 0.8) {
+      cautionReasons.push(tr.windApproachingLimit(wx.windSpeed.toFixed(1), limits.maxWindSpeed));
+    }
+    if (wx.windGusts > limits.maxWindGusts * 0.8) {
+      cautionReasons.push(tr.gustsApproachingLimit(wx.windGusts.toFixed(1), limits.maxWindGusts));
+    }
+    if (wx.temperature < limits.minTemperature + 5) {
+      cautionReasons.push(tr.tempNearMin(wx.temperature.toFixed(1), limits.minTemperature));
+    }
+    if (wx.precipitation > 0 && wx.precipitation <= limits.maxPrecipitation) {
+      cautionReasons.push(tr.precipPresent(wx.precipitation.toFixed(1)));
+    }
+    if (wx.visibility < limits.minVisibility * 2) {
+      cautionReasons.push(tr.visibilityBelow2x(wx.visibility));
+    }
+    if (wx.humidity > 85) {
+      cautionReasons.push(tr.highHumidity(wx.humidity));
+    }
+    if (wx.temperature >= -2 && wx.temperature <= 5 && wx.humidity > 80) {
+      cautionReasons.push(tr.potentialIcing(wx.temperature.toFixed(1), wx.humidity));
+    }
+    const dewPointSpread = wx.temperature - wx.dewPoint;
+    if (dewPointSpread < 3) {
+      cautionReasons.push(tr.dewPointSpreadCaution(dewPointSpread.toFixed(1)));
+    }
+    if (perf) {
+      // Drone flies up to its ceiling: stronger wind aloft matters even if 10 m wind is fine.
+      if (drone.performance!.ceilingM.min >= 80 && wx.windSpeed80 !== undefined
+          && wx.windSpeed80 > limits.maxWindSpeed) {
+        cautionReasons.push(tr.windAloftExceeds(wx.windSpeed80.toFixed(1), limits.maxWindSpeed));
+      }
+      const cut = perf.radiusStillKm > 0 ? 1 - perf.radiusWindKm / perf.radiusStillKm : 0;
+      if (cut > WIND_RADIUS_CAUTION) {
+        cautionReasons.push(tr.windCutsRadius(Math.round(cut * 100), perf.radiusWindKm));
+      }
+    }
   }
 
   const thermal = assessThermal(wx.precipitation, wx.visibility, wx.snowfall, wx.humidity, wx.temperature, lang);
   const sensor = assessSensor(wx.visibility, wx.precipitation, wx.cloudCover, wx.weatherCode, lang);
+  const status = noGoReasons.length > 0 ? 'NO_GO' : cautionReasons.length > 0 ? 'CAUTION' : 'GO';
 
   return {
-    status: cautionReasons.length > 0 ? 'CAUTION' : 'GO',
-    reasons: cautionReasons,
+    status,
+    reasons: status === 'NO_GO' ? noGoReasons : cautionReasons,
     thermalEffectiveness: drone.hasThermalCamera ? thermal.effectiveness : 'BLIND',
     thermalReasons: drone.hasThermalCamera ? thermal.reasons : [tr.noThermalCamera],
-    adjustedRange: adjustRange(drone.nominalRange, wx.windSpeed, drone.type),
-    adjustedEndurance: adjustEndurance(drone.nominalEndurance, wx.temperature),
+    adjustedRange: perf ? perf.radiusWindKm : adjustRange(drone.nominalRange, wx.windSpeed, drone.type),
+    adjustedEndurance: perf ? perf.endurance.min : adjustEndurance(drone.nominalEndurance, wx.temperature),
     icingRisk,
     sensorStatus: sensor.status,
     sensorReasons: sensor.reasons,
+    performance: perf,
   };
 }
 

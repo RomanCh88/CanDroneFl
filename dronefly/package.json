@@ -1,6 +1,9 @@
 {
-  "name": "dronefly",
-  "version": "0.1.0",
+  "name": "candronefly",
+  "description": "CanDroneFly is a web app for drone planning missions considering real-time weather data and drone performance.",
+  "author": "Roman Chomko",
+  "license": "ISC",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +14,7 @@
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",
+    "firebase": "^12.19.0",
     "leaflet": "^1.9.4",
     "next": "16.2.3",
     "react": "19.2.4",

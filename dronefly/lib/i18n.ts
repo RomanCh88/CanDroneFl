@@ -140,6 +140,109 @@ export type Translations = {
   icingNone: string;
   icingPossible: string;
   icingLikely: string;
+  // account
+  signIn: string;
+  signOut: string;
+  profile: string;
+  signInFailed: (code: string) => string;
+  popupBlocked: string;
+  savedLocations: string;
+  saveCurrentLocation: string;
+  noSavedLocations: string;
+  locationNamePlaceholder: string;
+  customBadge: string;
+  // profile page
+  profileTitle: string;
+  backToDashboard: string;
+  account: string;
+  signInToUnlock: string;
+  signInBenefits: string[];
+  authUnavailable: string;
+  loadingProfile: string;
+  preferences: string;
+  language: string;
+  defaultLocation: string;
+  defaultDrone: string;
+  none: string;
+  setDefault: string;
+  isDefault: string;
+  addLocation: string;
+  nameLabel: string;
+  latLabel: string;
+  lngLabel: string;
+  edit: string;
+  rename: string;
+  deleteLabel: string;
+  confirmDelete: string;
+  save: string;
+  cancel: string;
+  saving: string;
+  saveFailed: string;
+  customDrones: string;
+  noCustomDrones: string;
+  addDrone: string;
+  editDrone: string;
+  newDrone: string;
+  startFrom: string;
+  droneType: string;
+  typeFpv: string;
+  typeMultirotor: string;
+  typeFixedWing: string;
+  icon: string;
+  minTemp: string;
+  maxTemp: string;
+  nominalRange: string;
+  nominalEndurance: string;
+  hasThermal: string;
+  notesLabel: string;
+  invalidField: (field: string) => string;
+  useOnDashboard: string;
+  // detailed specs / performance
+  windNoReturn: (w: string, v: string, kg: number) => string;
+  windAloftExceeds: (w: string, lim: number) => string;
+  windCutsRadius: (pct: number, km: number) => string;
+  specsTitle: string;
+  useDetailedSpecs: string;
+  specsHint: string;
+  specParam: string;
+  specValue: string;
+  specNote: string;
+  fromLabel: string;
+  toLabel: string;
+  specMaxPayload: string;
+  specRange: string;
+  specRadius: string;
+  specRadiusEmpty: string;
+  specRadiusFull: string;
+  specEndurance: string;
+  specEnduranceEmpty: string;
+  specEnduranceLoaded: string;
+  specAtPayload: string;
+  specSpeed: string;
+  specSpeedEmpty: string;
+  specSpeedFull: string;
+  specCeiling: string;
+  specWind: string;
+  specWindSustained: string;
+  specWindGusts: string;
+  specConservativeNote: string;
+  exampleTemplate: string;
+  payload: string;
+  payloadHint: string;
+  perfTitle: (kg: number) => string;
+  perfEndurance: string;
+  perfMaxSpeed: string;
+  perfRadiusNominal: string;
+  perfRadiusStill: string;
+  perfRadiusWind: string;
+  perfWindUsed: string;
+  perfWindRatio: string;
+  perfCeiling: string;
+  perfLimitedByRange: (km: number) => string;
+  perfModelNote: string;
+  roundTripTitle: string;
+  roundTripNote: string;
+  cannotReturn: string;
 };
 
 const uk: Translations = {
@@ -267,6 +370,106 @@ const uk: Translations = {
   icingNone: 'ВІДСУТНЄ',
   icingPossible: 'МОЖЛИВЕ',
   icingLikely: 'ЙМОВІРНЕ',
+  signIn: 'УВІЙТИ',
+  signOut: 'ВИЙТИ',
+  profile: 'ПРОФІЛЬ',
+  signInFailed: (code) => `Не вдалося увійти (${code})`,
+  popupBlocked: 'Браузер заблокував вікно входу — дозвольте спливаючі вікна для цього сайту',
+  savedLocations: 'ЗБЕРЕЖЕНІ ТОЧКИ',
+  saveCurrentLocation: '+ ЗБЕРЕГТИ ПОТОЧНУ',
+  noSavedLocations: 'Немає збережених точок',
+  locationNamePlaceholder: 'Назва точки',
+  customBadge: 'ВЛАСНИЙ',
+  profileTitle: '// ПРОФІЛЬ ОПЕРАТОРА',
+  backToDashboard: '← ДО ПАНЕЛІ',
+  account: 'АКАУНТ',
+  signInToUnlock: 'Увійдіть, щоб відкрити розширені можливості',
+  signInBenefits: ['Збережені точки та швидке перемикання між ними', 'Власні БПЛА з власними лімітами', 'Синхронізація налаштувань між пристроями'],
+  authUnavailable: 'Вхід тимчасово недоступний.',
+  loadingProfile: 'ЗАВАНТАЖЕННЯ ПРОФІЛЮ...',
+  preferences: 'НАЛАШТУВАННЯ',
+  language: 'Мова',
+  defaultLocation: 'Точка за замовчуванням',
+  defaultDrone: 'БПЛА за замовчуванням',
+  none: '— немає —',
+  setDefault: 'ЗА ЗАМОВЧ.',
+  isDefault: '★ ЗА ЗАМОВЧ.',
+  addLocation: '+ ДОДАТИ ТОЧКУ',
+  nameLabel: 'Назва',
+  latLabel: 'Широта',
+  lngLabel: 'Довгота',
+  edit: 'РЕДАГУВАТИ',
+  rename: 'ПЕРЕЙМЕНУВАТИ',
+  deleteLabel: 'ВИДАЛИТИ',
+  confirmDelete: 'ТОЧНО?',
+  save: 'ЗБЕРЕГТИ',
+  cancel: 'СКАСУВАТИ',
+  saving: 'ЗБЕРЕЖЕННЯ...',
+  saveFailed: "Не вдалося зберегти. Перевірте з'єднання.",
+  customDrones: 'ВЛАСНІ БПЛА',
+  noCustomDrones: 'Власних БПЛА ще немає',
+  addDrone: '+ ДОДАТИ БПЛА',
+  editDrone: '// РЕДАГУВАННЯ БПЛА',
+  newDrone: '// НОВИЙ БПЛА',
+  startFrom: 'Шаблон',
+  droneType: 'Тип',
+  typeFpv: 'FPV',
+  typeMultirotor: 'Мультикоптер',
+  typeFixedWing: 'Літак',
+  icon: 'Іконка',
+  minTemp: 'Мін. темп. (°C)',
+  maxTemp: 'Макс. темп. (°C)',
+  nominalRange: 'Дальність (км)',
+  nominalEndurance: 'Час польоту (хв)',
+  hasThermal: 'Тепловізор',
+  notesLabel: 'Нотатки',
+  invalidField: (f) => `Некоректне значення: ${f}`,
+  useOnDashboard: 'ВІДКРИТИ НА ПАНЕЛІ',
+  windNoReturn: (w, v, kg) => `Вітер ${w} м/с близький до швидкості БПЛА ${v} м/с при вантажі ${kg} кг — повернення не гарантоване`,
+  windAloftExceeds: (w, lim) => `Вітер на висоті 80 м ${w} м/с вище ліміту (${lim} м/с)`,
+  windCutsRadius: (pct, km) => `Вітер зменшує радіус на ${pct}% (до ${km} км туди-назад)`,
+  specsTitle: 'ТТХ',
+  useDetailedSpecs: 'Детальні ТТХ (вантаж, швидкість, радіус)',
+  specsHint: 'Вводьте як у таблиці характеристик. Діапазони «від–до» — розрахунок бере менше значення.',
+  specParam: 'Параметр',
+  specValue: 'Показник',
+  specNote: 'Примітки',
+  fromLabel: 'від',
+  toLabel: 'до',
+  specMaxPayload: 'Корисне навантаження',
+  specRange: 'Дальність польоту',
+  specRadius: 'Ефективний радіус',
+  specRadiusEmpty: 'без вантажу',
+  specRadiusFull: 'з повним вантажем',
+  specEndurance: 'Тривалість польоту',
+  specEnduranceEmpty: 'без вантажу',
+  specEnduranceLoaded: 'з вантажем',
+  specAtPayload: 'при вантажі',
+  specSpeed: 'Максимальна швидкість',
+  specSpeedEmpty: 'без вантажу',
+  specSpeedFull: 'з повним вантажем',
+  specCeiling: 'Практична стеля',
+  specWind: 'Стійкість до вітру',
+  specWindSustained: 'постійний',
+  specWindGusts: 'пориви',
+  specConservativeNote: 'менше значення використовується в розрахунку',
+  exampleTemplate: 'Приклад: важкий коптер 15 кг (ТТХ)',
+  payload: 'ВАНТАЖ',
+  payloadHint: 'Вантаж на цей виліт — усі розрахунки перераховуються',
+  perfTitle: (kg) => `ХАРАКТЕРИСТИКИ ПРИ ВАНТАЖІ ${kg} КГ`,
+  perfEndurance: 'Тривалість польоту',
+  perfMaxSpeed: 'Макс. швидкість',
+  perfRadiusNominal: 'Радіус за ТТХ',
+  perfRadiusStill: 'Радіус з урахуванням холоду',
+  perfRadiusWind: 'Радіус з урахуванням вітру',
+  perfWindUsed: 'Вітер у розрахунку (макс. 10 м / 80 м)',
+  perfWindRatio: 'Вітер / швидкість БПЛА',
+  perfCeiling: 'Практична стеля',
+  perfLimitedByRange: (km) => `обмежено макс. дальністю ${km} км`,
+  perfModelNote: 'Модель: лінійна інтерполяція ТТХ за вантажем; холод −1%/°C нижче 0; вітер — політ туди-назад, найгірший випадок (вздовж вітру). Повернення не гарантоване при вітрі ≥ 85% швидкості.',
+  roundTripTitle: 'РАДІУС ТУДИ-НАЗАД ЗА НАПРЯМКОМ',
+  roundTripNote: 'Для польоту туди-назад зустрічний і попутний вітер дають однаковий результат — найгірше летіти вздовж вітру, найкраще поперек.',
+  cannotReturn: 'НЕМАЄ ПОВЕРНЕННЯ',
 };
 
 const en: Translations = {
@@ -394,6 +597,106 @@ const en: Translations = {
   icingNone: 'NONE',
   icingPossible: 'POSSIBLE',
   icingLikely: 'LIKELY',
+  signIn: 'SIGN IN',
+  signOut: 'SIGN OUT',
+  profile: 'PROFILE',
+  signInFailed: (code) => `Sign-in failed (${code})`,
+  popupBlocked: 'The browser blocked the sign-in window — allow pop-ups for this site',
+  savedLocations: 'SAVED LOCATIONS',
+  saveCurrentLocation: '+ SAVE CURRENT',
+  noSavedLocations: 'No saved locations',
+  locationNamePlaceholder: 'Location name',
+  customBadge: 'CUSTOM',
+  profileTitle: '// OPERATOR PROFILE',
+  backToDashboard: '← DASHBOARD',
+  account: 'ACCOUNT',
+  signInToUnlock: 'Sign in to unlock extended options',
+  signInBenefits: ['Saved locations with quick switching', 'Custom drones with your own limits', 'Preferences synced across devices'],
+  authUnavailable: 'Sign-in is temporarily unavailable.',
+  loadingProfile: 'LOADING PROFILE...',
+  preferences: 'PREFERENCES',
+  language: 'Language',
+  defaultLocation: 'Default location',
+  defaultDrone: 'Default drone',
+  none: '— none —',
+  setDefault: 'SET DEFAULT',
+  isDefault: '★ DEFAULT',
+  addLocation: '+ ADD LOCATION',
+  nameLabel: 'Name',
+  latLabel: 'Latitude',
+  lngLabel: 'Longitude',
+  edit: 'EDIT',
+  rename: 'RENAME',
+  deleteLabel: 'DELETE',
+  confirmDelete: 'SURE?',
+  save: 'SAVE',
+  cancel: 'CANCEL',
+  saving: 'SAVING...',
+  saveFailed: 'Could not save. Check your connection.',
+  customDrones: 'CUSTOM DRONES',
+  noCustomDrones: 'No custom drones yet',
+  addDrone: '+ ADD DRONE',
+  editDrone: '// EDIT DRONE',
+  newDrone: '// NEW DRONE',
+  startFrom: 'Template',
+  droneType: 'Type',
+  typeFpv: 'FPV',
+  typeMultirotor: 'Multirotor',
+  typeFixedWing: 'Fixed-wing',
+  icon: 'Icon',
+  minTemp: 'Min temp (°C)',
+  maxTemp: 'Max temp (°C)',
+  nominalRange: 'Range (km)',
+  nominalEndurance: 'Endurance (min)',
+  hasThermal: 'Thermal camera',
+  notesLabel: 'Notes',
+  invalidField: (f) => `Invalid value: ${f}`,
+  useOnDashboard: 'OPEN ON DASHBOARD',
+  windNoReturn: (w, v, kg) => `Wind ${w} m/s is close to drone speed ${v} m/s at ${kg} kg payload — return not guaranteed`,
+  windAloftExceeds: (w, lim) => `Wind at 80 m ${w} m/s above limit (${lim} m/s)`,
+  windCutsRadius: (pct, km) => `Wind cuts radius by ${pct}% (to ${km} km out-and-back)`,
+  specsTitle: 'SPECS',
+  useDetailedSpecs: 'Detailed specs (payload, speed, radius)',
+  specsHint: 'Enter values as on the spec sheet. For "from–to" ranges the calculation uses the lower value.',
+  specParam: 'Parameter',
+  specValue: 'Value',
+  specNote: 'Notes',
+  fromLabel: 'from',
+  toLabel: 'to',
+  specMaxPayload: 'Payload capacity',
+  specRange: 'Flight range',
+  specRadius: 'Effective radius',
+  specRadiusEmpty: 'empty',
+  specRadiusFull: 'at full payload',
+  specEndurance: 'Flight time',
+  specEnduranceEmpty: 'empty',
+  specEnduranceLoaded: 'with payload',
+  specAtPayload: 'at payload',
+  specSpeed: 'Max speed',
+  specSpeedEmpty: 'empty',
+  specSpeedFull: 'at full payload',
+  specCeiling: 'Practical ceiling',
+  specWind: 'Wind resistance',
+  specWindSustained: 'sustained',
+  specWindGusts: 'gusts',
+  specConservativeNote: 'the lower value is used in calculations',
+  exampleTemplate: 'Example: heavy multirotor 15 kg (specs)',
+  payload: 'PAYLOAD',
+  payloadHint: 'Payload for this sortie — all calculations update',
+  perfTitle: (kg) => `PERFORMANCE AT ${kg} KG PAYLOAD`,
+  perfEndurance: 'Flight time',
+  perfMaxSpeed: 'Max speed',
+  perfRadiusNominal: 'Radius per specs',
+  perfRadiusStill: 'Radius after cold',
+  perfRadiusWind: 'Radius after wind',
+  perfWindUsed: 'Wind used (max of 10 m / 80 m)',
+  perfWindRatio: 'Wind / drone speed',
+  perfCeiling: 'Practical ceiling',
+  perfLimitedByRange: (km) => `capped by max range ${km} km`,
+  perfModelNote: 'Model: specs interpolated linearly by payload; cold −1%/°C below 0; wind = out-and-back flight, worst case (along the wind). Return not guaranteed when wind ≥ 85% of drone speed.',
+  roundTripTitle: 'OUT-AND-BACK RADIUS BY HEADING',
+  roundTripNote: 'For an out-and-back flight head- and tailwind give the same result — flying along the wind is worst, across it is best.',
+  cannotReturn: 'NO RETURN',
 };
 
 const translations: Record<Lang, Translations> = { uk, en };
