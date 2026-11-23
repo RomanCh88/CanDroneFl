@@ -82,7 +82,8 @@ Bugs / correctness:
 - `adjustRange` ignores wind direction. Fetched but unused: `precipitation_probability`, `wind_speed_80m`, cloud layers, pressure.
 - Location name for clicked points is only coordinates (no reverse geocoding/search).
 Production readiness:
-- Donate links are placeholders (`nowpayments.io/donation`, `paypal.me`, `send.monobank.ua`). **Donations are hidden** via `SHOW_DONATIONS = false` in `lib/features.ts` (user decision 2026-11-21); set real links before flipping it back on.
+- Donate links are placeholders (`nowpayments.io/donation`, `paypal.me`, `send.monobank.ua`). **Donations are hidden** via `SHOW_DONATIONS = false` in `lib/features.ts` (user decision 2026-11-21); set real links before flipping it back on. ⚠ Its copy ("Donations keep it running") funds the service itself — conflicts with Open-Meteo's non-commercial free tier; rewrite before re-enabling.
+- **"Say thanks" (2026-11-23)**: `components/ThanksButton.tsx` in the dashboard header → native `<dialog>` with the author's unit monobank jar (`THANKS_JAR_URL`). Deliberate framing (user decision): service is free, money goes to the unit's current need, NOT to DroneFly, no feature depends on it, plus Open-Meteo/OSM attribution — keeps it clear of Open-Meteo "non-commercial" and OSM attribution rules. Don't add paywalls/ads/"keeps the service running" wording.
 - README is still the create-next-app boilerplate. `public/` still has the default next/vercel/file/globe/window SVGs.
 - No tests at all (the rules engine is pure and easy to unit-test). No CI. No error boundary. No retry/backoff on the fetch.
 - No SEO/OG metadata, no `metadataBase`, no viewport/themeColor export, `lang` on `<html>` is fixed to `uk`.

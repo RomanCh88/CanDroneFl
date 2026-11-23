@@ -234,6 +234,13 @@ export type Translations = {
   dfSaveChanges: string;
   // docs page chrome (long-form content lives in components/docs/content.*.tsx)
   navDocs: string;
+  // "say thanks" popup (donations go to the author's unit, never to the service)
+  thanksButton: string;
+  thanksTitle: string;
+  thanksFree: string;
+  thanksUnit: string;
+  thanksCta: string;
+  thanksNote: string;
   docsTitle: string;
   docsSubtitle: string;
   docsContents: string;
@@ -655,6 +662,12 @@ const uk: Translations = {
   dfCreate: 'ДОДАТИ БПЛА',
   dfSaveChanges: 'ЗБЕРЕГТИ ЗМІНИ',
   navDocs: 'ДОВІДКА',
+  thanksButton: 'ПОДЯКУВАТИ',
+  thanksTitle: 'Дякуємо, що ви з нами 💙💛',
+  thanksFree: 'DroneFly на даний момент безкоштовний, без реклами і платних функцій. Нам щиро приємно, що він допомагає вам у роботі.',
+  thanksUnit: 'Якщо захочете подякувати — підтримайте підрозділ автора: усі кошти йдуть на поточну потребу підрозділу, а не на сам сервіс.',
+  thanksCta: 'ПІДТРИМАТИ ПІДРОЗДІЛ · БАНКА MONOBANK',
+  thanksNote: 'Цілком добровільно, будь-яка сума. Жодна функція DroneFly від цього не залежить. Дякуємо за кожну гривню і бережіть себе.',
   docsTitle: 'Довідка DroneFly',
   docsSubtitle: 'Як користуватися панеллю, плануванням місій і як рахуються оцінки — з прикладами на реальних екранах.',
   docsContents: 'Зміст',
@@ -1075,6 +1088,12 @@ const en: Translations = {
   dfCreate: 'ADD DRONE',
   dfSaveChanges: 'SAVE CHANGES',
   navDocs: 'DOCS',
+  thanksButton: 'SAY THANKS',
+  thanksTitle: 'Thank you for being with us 💙💛',
+  thanksFree: 'DroneFly is currently free, no ads, no subscriptions, no paid features. We are truly glad it helps you in your work.',
+  thanksUnit: 'If you would like to say thanks, you can support the author’s unit: every hryvnia goes to the unit’s current need, not to the service itself.',
+  thanksCta: 'SUPPORT THE UNIT · MONOBANK JAR',
+  thanksNote: 'Completely voluntary, any amount. No DroneFly feature depends on it. Thank you for every bit of help — and stay safe.',
   docsTitle: 'DroneFly documentation',
   docsSubtitle: 'How to use the dashboard and the mission planner, and how every rating is calculated — shown on real screens.',
   docsContents: 'Contents',

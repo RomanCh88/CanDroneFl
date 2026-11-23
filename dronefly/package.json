@@ -3,7 +3,7 @@
   "description": "CanDroneFly is a web app for drone planning missions considering real-time weather data and drone performance.",
   "author": "Roman Chomko",
   "license": "ISC",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

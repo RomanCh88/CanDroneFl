@@ -21,6 +21,7 @@ import DroneDetail from '@/components/DroneDetail';
 import Timeline from '@/components/Timeline';
 import BestWindows from '@/components/BestWindows';
 import DonateButton from '@/components/DonateButton';
+import ThanksButton from '@/components/ThanksButton';
 import { SHOW_DONATIONS } from '@/lib/features';
 
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false });
@@ -249,6 +250,8 @@ export default function Home() {
               {tr.fetching}
             </span>
           )}
+
+          <ThanksButton />
 
           <Link
             href="/docs"
