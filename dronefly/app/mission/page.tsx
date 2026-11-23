@@ -49,6 +49,7 @@ export default function MissionPage() {
         </Link>
         <span className="text-xs font-mono text-[#4a6080] hidden sm:inline">{tr.missionTitle}</span>
         <Link href="/" className="text-xs font-mono text-[#4a6080] hover:text-[#00b4d8]">{tr.backToDashboard}</Link>
+        <Link href="/docs" className="text-xs font-mono text-[#4a6080] hover:text-[#00b4d8]">? {tr.navDocs}</Link>
         <div className="ml-auto flex items-center gap-3">
           <button
             onClick={() => setLang(lang === 'uk' ? 'en' : 'uk')}

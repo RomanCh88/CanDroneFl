@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -85,6 +86,7 @@ export default function AccessGate() {
         <div className="text-xs text-[#ffaa00] mb-1">◈ {tr.inviteOnlyBadge}</div>
         <div className="text-[#c8d0e0] text-sm font-bold">{tr.inviteOnlyTitle}</div>
         <div className="text-xs text-[#4a6080] mt-1 leading-relaxed">{tr.inviteOnlyText}</div>
+        <Link href="/docs#overview" className="inline-block mt-2 text-xs text-[#00b4d8] hover:underline underline-offset-2">{tr.docsWhatMembersGet}</Link>
       </div>
 
       <section className="space-y-2">

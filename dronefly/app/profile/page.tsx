@@ -72,6 +72,7 @@ export default function ProfilePage() {
           <span className="font-bold text-lg tracking-widest text-[#00b4d8]">DRONEFLY</span>
         </Link>
         <Link href="/" className="text-xs font-mono text-[#4a6080] hover:text-[#00b4d8]">{tr.backToDashboard}</Link>
+        <Link href="/docs" className="text-xs font-mono text-[#4a6080] hover:text-[#00b4d8]">? {tr.navDocs}</Link>
         <button
           onClick={() => setLang(lang === 'uk' ? 'en' : 'uk')}
           className="ml-auto text-xs px-2 py-1 border border-[#1e2d45] font-mono tracking-wider"

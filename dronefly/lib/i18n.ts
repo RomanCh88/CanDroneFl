@@ -232,6 +232,23 @@ export type Translations = {
   dfIcingHint: string;
   dfCreate: string;
   dfSaveChanges: string;
+  // docs page chrome (long-form content lives in components/docs/content.*.tsx)
+  navDocs: string;
+  docsTitle: string;
+  docsSubtitle: string;
+  docsContents: string;
+  docsPartBasics: string;
+  docsPartMembers: string;
+  docsPartReference: string;
+  docsMembersBadge: string;
+  docsCtaTitle: string;
+  docsCtaText: string;
+  docsCtaSignIn: string;
+  docsCtaRequest: string;
+  docsCtaMember: string;
+  docsOpenFull: string;
+  docsBackToTop: string;
+  docsWhatMembersGet: string;
   // detailed specs / performance
   windNoReturn: (w: string, v: string, kg: number) => string;
   windAloftExceeds: (w: string, lim: number) => string;
@@ -612,7 +629,7 @@ const uk: Translations = {
   dfSecWeather: 'Погодні ліміти',
   dfSecEquipment: 'Обладнання',
   dfPerfHint: 'Оберіть, скільки даних у вас є. Простого режиму достатньо для оцінки погоди.',
-  dfWeatherHint: 'Якщо погода виходить за ці межі, БПЛА отримує оцінку «НЕ ЛІТАТИ».',
+  dfWeatherHint: 'Якщо погода виходить за ці межі, БПЛА отримує оцінку «ЗАБОРОНА».',
   dfModeQuick: 'Простий',
   dfModeQuickHint: 'Дальність, час польоту і ліміт вітру. Без урахування вантажу.',
   dfModeSpecs: 'За таблицею ТТХ',
@@ -634,9 +651,25 @@ const uk: Translations = {
   dfGroupPrecip: 'Опади і видимість',
   dfThermalHint: 'Показує ефективність тепловізора для поточної погоди',
   dfIpHint: 'Інформаційно, показується в деталях БПЛА',
-  dfIcingHint: '«НЕ ЛІТАТИ» при ризику обмерзання (−5…+2 °C, вологість >90%)',
+  dfIcingHint: '«ЗАБОРОНА» при ризику обмерзання (−5…+2 °C, вологість >90%)',
   dfCreate: 'ДОДАТИ БПЛА',
   dfSaveChanges: 'ЗБЕРЕГТИ ЗМІНИ',
+  navDocs: 'ДОВІДКА',
+  docsTitle: 'Довідка DroneFly',
+  docsSubtitle: 'Як користуватися панеллю, плануванням місій і як рахуються оцінки — з прикладами на реальних екранах.',
+  docsContents: 'Зміст',
+  docsPartBasics: 'Для всіх',
+  docsPartMembers: 'Для учасників',
+  docsPartReference: 'Довідник',
+  docsMembersBadge: 'УЧАСНИКИ',
+  docsCtaTitle: 'ДОСТУП ЗА ЗАПРОШЕННЯМ',
+  docsCtaText: 'Власні БПЛА з ТТХ, розрахунок вантажу, планування місій і збережені точки — для учасників. Увійдіть через Google і введіть код запрошення або надішліть запит.',
+  docsCtaSignIn: 'УВІЙТИ І ОТРИМАТИ ДОСТУП',
+  docsCtaRequest: 'ЗАПИТАТИ ДОСТУП',
+  docsCtaMember: 'У вас є доступ до всіх функцій',
+  docsOpenFull: 'відкрити в повному розмірі',
+  docsBackToTop: 'нагору',
+  docsWhatMembersGet: 'Що отримують учасники? → Довідка',
   windNoReturn: (w, v, kg) => `Вітер ${w} м/с близький до швидкості БПЛА ${v} м/с при вантажі ${kg} кг — повернення не гарантоване`,
   windAloftExceeds: (w, lim) => `Вітер на висоті 80 м ${w} м/с вище ліміту (${lim} м/с)`,
   windCutsRadius: (pct, km) => `Вітер зменшує радіус на ${pct}% (до ${km} км туди-назад)`,
@@ -1041,6 +1074,22 @@ const en: Translations = {
   dfIcingHint: 'NO-GO when icing is likely (−5…+2 °C, humidity >90%)',
   dfCreate: 'ADD DRONE',
   dfSaveChanges: 'SAVE CHANGES',
+  navDocs: 'DOCS',
+  docsTitle: 'DroneFly documentation',
+  docsSubtitle: 'How to use the dashboard and the mission planner, and how every rating is calculated — shown on real screens.',
+  docsContents: 'Contents',
+  docsPartBasics: 'For everyone',
+  docsPartMembers: 'For members',
+  docsPartReference: 'Reference',
+  docsMembersBadge: 'MEMBERS',
+  docsCtaTitle: 'INVITE-ONLY ACCESS',
+  docsCtaText: 'Your own drones with full specs, payload-aware ratings, the mission planner and saved locations are for members. Sign in with Google, then enter an invite code or send an access request.',
+  docsCtaSignIn: 'SIGN IN & GET ACCESS',
+  docsCtaRequest: 'REQUEST ACCESS',
+  docsCtaMember: 'You have access to every feature',
+  docsOpenFull: 'open full size',
+  docsBackToTop: 'back to top',
+  docsWhatMembersGet: 'What do members get? → Docs',
   windNoReturn: (w, v, kg) => `Wind ${w} m/s is close to drone speed ${v} m/s at ${kg} kg payload — return not guaranteed`,
   windAloftExceeds: (w, lim) => `Wind at 80 m ${w} m/s above limit (${lim} m/s)`,
   windCutsRadius: (pct, km) => `Wind cuts radius by ${pct}% (to ${km} km out-and-back)`,

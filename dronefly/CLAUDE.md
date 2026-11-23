@@ -66,6 +66,12 @@ Phase 1 accounts (2026-11-21, not deployed yet): Google sign-in, /profile, saved
 - Known model gap: computed out-and-back radius (9.2 km at 10 kg, no reserve) is below the spec sheet's 11.7 km because we use the lower endurance/speed values — the planner shows the spec radius for comparison.
 - Dev note: dev server in WSL on /mnt/d may miss files created from Windows (new routes 404) → restart it or use `WATCHPACK_POLLING=true`.
 
+## Docs (`/docs`, public, built 2026-11-23)
+- `app/docs/page.tsx` (TOC + scroll-spy, chapters in 3 parts: basics / members / reference), `components/docs/`: `content.en.tsx` + `content.uk.tsx` (long-form text per language — exception to the "all strings in i18n.ts" rule; page chrome strings are `docs*`/`navDocs` in i18n.ts), `blocks.tsx` (P/Table/Formula/Callout/Status, `MembersCTA` adapts to auth state, `ProfilesTable` generated from DRONE_PROFILES), `Figure.tsx` (screenshot + numbered markers/arrows from element boxes).
+- Formulas/thresholds in "How it's calculated" are written from lib/assessment|thermal|range|performance|mission.ts; constants (NO_RETURN_RATIO, GUST_FACTOR, WIND_RADIUS_CAUTION) are imported. **When you change a rule, update both content files.**
+- Screenshots: `public/docs/<shot>.<lang>.webp` + boxes in `components/docs/shots.json` (per lang). Regenerate with `scripts/docs-shots/`: temporarily `export` AuthContext/UserDataContext, copy `harness-page.tsx.txt` to `app/zz-shots/[view]/page.tsx` (mock member), `next build && next start -p 3100`, run `capture.js` with playwright-core + Windows Chrome, convert PNG→WebP with sharp, then **delete the harness and revert the exports — never commit/deploy it** (it bypasses the invite gate for client-only screens).
+- Images use `next/image` with `unoptimized` (no Cloud Run image-optimisation CPU).
+
 ## Known issues / gaps (found while reviewing the code, 2026-11-21)
 Bugs / correctness:
 - **SW serves a stale app shell**: `'/'` is in `STATIC_ASSETS`, so it hits the cache-first branch before the navigate branch, and `CACHE_NAME` never changes. Users can be stuck on an old build after a deploy. Needs network-first HTML plus versioned caches (or Serwist).

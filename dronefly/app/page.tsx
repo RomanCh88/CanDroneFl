@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, useDeferredValue } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { WeatherData, FlyabilityAssessment, HourlyAssessment, Location, DroneProfile } from '@/types';
 import { useWeather } from '@/hooks/useWeather';
 import { DRONE_PROFILES } from '@/lib/droneProfiles';
@@ -248,6 +249,14 @@ export default function Home() {
               {tr.fetching}
             </span>
           )}
+
+          <Link
+            href="/docs"
+            className="text-xs px-2 py-1 border font-mono tracking-wider transition-colors hover:text-[#00b4d8]"
+            style={{ borderColor: '#1e2d45', color: '#4a6080', fontFamily: 'var(--font-jetbrains)' }}
+          >
+            ? {tr.navDocs}
+          </Link>
 
           {/* Language toggle */}
           <button

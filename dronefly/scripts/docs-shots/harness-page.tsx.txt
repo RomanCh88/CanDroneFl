@@ -1,0 +1,54 @@
+'use client';
+
+// TEMPORARY screenshot harness for /docs — NOT to be committed. Renders members-only screens
+// with a mock signed-in member so they can be captured without a real login.
+
+import { use } from 'react';
+import type { User } from 'firebase/auth';
+import { AuthContext } from '@/contexts/AuthContext';
+import { UserDataContext } from '@/contexts/UserDataContext';
+import { EXAMPLE_SPEC_DRONE } from '@/lib/droneProfiles';
+import MissionPage from '@/app/mission/page';
+import ProfilePage from '@/app/profile/page';
+import DashboardPage from '@/app/page';
+import AccessGate from '@/components/access/AccessGate';
+
+const noop = async () => {};
+const user = { uid: 'demo', displayName: 'Demo Operator', email: 'operator@example.com', photoURL: null } as unknown as User;
+
+const drone = { ...EXAMPLE_SPEC_DRONE, id: 'custom_demo', name: 'Heavy 15 kg', custom: true };
+
+export default function Shots({ params }: { params: Promise<{ view: string }> }) {
+  const { view } = use(params);
+  const member = view !== 'gate';
+  const auth = {
+    enabled: true, user, loading: false, member, error: null,
+    signInWithGoogle: noop, signOut: noop, refreshMembership: noop,
+  };
+  const data = {
+    ready: true,
+    prefs: { defaultDroneId: 'custom_demo' },
+    locations: [
+      { id: 'l1', name: 'Base Alpha', lat: 50.45, lng: 30.52 },
+      { id: 'l2', name: 'Training field', lat: 50.38, lng: 30.75 },
+    ],
+    customDrones: [drone],
+    updatePrefs: noop,
+    addLocation: async () => 'x',
+    renameLocation: noop,
+    deleteLocation: noop,
+    addDrone: async () => 'x',
+    updateDrone: noop,
+    deleteDrone: noop,
+  };
+  let body: React.ReactNode = null;
+  if (view === 'mission') body = <MissionPage />;
+  else if (view === 'profile') body = <ProfilePage />;
+  else if (view === 'dashboard') body = <DashboardPage />;
+  else if (view === 'gate') body = <div className="p-8"><AccessGate /></div>;
+  return (
+    <AuthContext.Provider value={auth}>
+      <UserDataContext.Provider value={data}>{body}</UserDataContext.Provider>
+    </AuthContext.Provider>
+  );
+}
