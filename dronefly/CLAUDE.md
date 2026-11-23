@@ -12,7 +12,7 @@ The original spec is `../drone-wx-instructions.md` (repo root). Read it for the 
 - Weather: Open-Meteo `/v1/forecast`, called from the client. No key, no backend.
 - Accounts (optional layer): **Firebase Auth (Google only) + Firestore**, firebase JS SDK 12, all client-side. Config comes from `NEXT_PUBLIC_FIREBASE_*` (see `.env.example`; in prod in `apphosting.yaml` with BUILD availability). **Without the env vars the app runs public-only** (no sign-in UI), which is the guarantee that the public version stays unchanged.
 - Fonts: Exo 2 (labels) and JetBrains Mono (data) via `next/font`, both with cyrillic subsets.
-- Hosting: **Firebase App Hosting** (`firebase.json` → backend `can-drone-fly`, project `candronefly`, `apphosting.yaml` minInstances 0). The spec said Vercel; that was dropped.
+- Hosting: **Firebase App Hosting** (`firebase.json` → backend `can-drone-fly`, project `candronefly`, `apphosting.yaml` minInstances 0, maxInstances 3 as a cost ceiling — raise if users see 429/503). The spec said Vercel; that was dropped.
 - `.agents/skills/` + `skills-lock.json` = Firebase agent skills (installed tooling, not app code).
 
 ## Commands (run from `dronefly/`)

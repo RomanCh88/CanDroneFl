@@ -197,6 +197,41 @@ export type Translations = {
   notesLabel: string;
   invalidField: (field: string) => string;
   useOnDashboard: string;
+  // drone form (df*)
+  dfPickTitle: string;
+  dfPickHint: string;
+  dfBasedOn: string;
+  dfChangeTemplate: string;
+  dfSecBasics: string;
+  dfSecPerformance: string;
+  dfSecWeather: string;
+  dfSecEquipment: string;
+  dfPerfHint: string;
+  dfWeatherHint: string;
+  dfModeQuick: string;
+  dfModeQuickHint: string;
+  dfModeSpecs: string;
+  dfModeSpecsHint: string;
+  dfNamePlaceholder: string;
+  dfRequired: string;
+  dfOptional: string;
+  dfSingleValueHint: string;
+  dfErrRange: (lo: number, hi: number) => string;
+  dfErrNotAbove: (label: string) => string;
+  dfErrNotBelow: (label: string) => string;
+  dfErrSummary: (n: number) => string;
+  dfGroupPayload: string;
+  dfGroupFlightTime: string;
+  dfGroupSpeed: string;
+  dfGroupRadius: string;
+  dfGroupWind: string;
+  dfGroupTemp: string;
+  dfGroupPrecip: string;
+  dfThermalHint: string;
+  dfIpHint: string;
+  dfIcingHint: string;
+  dfCreate: string;
+  dfSaveChanges: string;
   // detailed specs / performance
   windNoReturn: (w: string, v: string, kg: number) => string;
   windAloftExceeds: (w: string, lim: number) => string;
@@ -568,6 +603,40 @@ const uk: Translations = {
   notesLabel: 'Нотатки',
   invalidField: (f) => `Некоректне значення: ${f}`,
   useOnDashboard: 'ВІДКРИТИ НА ПАНЕЛІ',
+  dfPickTitle: 'З чого почати?',
+  dfPickHint: 'Оберіть найближчий тип — усі значення заповняться автоматично, і будь-яке можна змінити.',
+  dfBasedOn: 'На основі',
+  dfChangeTemplate: 'Змінити шаблон',
+  dfSecBasics: 'Основне',
+  dfSecPerformance: 'Льотні характеристики',
+  dfSecWeather: 'Погодні ліміти',
+  dfSecEquipment: 'Обладнання',
+  dfPerfHint: 'Оберіть, скільки даних у вас є. Простого режиму достатньо для оцінки погоди.',
+  dfWeatherHint: 'Якщо погода виходить за ці межі, БПЛА отримує оцінку «НЕ ЛІТАТИ».',
+  dfModeQuick: 'Простий',
+  dfModeQuickHint: 'Дальність, час польоту і ліміт вітру. Без урахування вантажу.',
+  dfModeSpecs: 'За таблицею ТТХ',
+  dfModeSpecsHint: 'Вантаж, швидкість, радіус. Час і радіус змінюються з вантажем — точніше в планувальнику місій.',
+  dfNamePlaceholder: 'напр. Вампір №2',
+  dfRequired: "Обов'язкове поле",
+  dfOptional: 'необов’язково',
+  dfSingleValueHint: 'Якщо в ТТХ одне значення — залиште «до» порожнім.',
+  dfErrRange: (lo, hi) => `Введіть число від ${lo} до ${hi}`,
+  dfErrNotAbove: (l) => `Не може бути більшим за «${l}»`,
+  dfErrNotBelow: (l) => `Не може бути меншим за «${l}»`,
+  dfErrSummary: (n) => `Потрібно виправити полів: ${n}`,
+  dfGroupPayload: 'Вантаж і маса',
+  dfGroupFlightTime: 'Тривалість польоту',
+  dfGroupSpeed: 'Максимальна швидкість',
+  dfGroupRadius: 'Радіус і дальність',
+  dfGroupWind: 'Вітер',
+  dfGroupTemp: 'Температура',
+  dfGroupPrecip: 'Опади і видимість',
+  dfThermalHint: 'Показує ефективність тепловізора для поточної погоди',
+  dfIpHint: 'Інформаційно, показується в деталях БПЛА',
+  dfIcingHint: '«НЕ ЛІТАТИ» при ризику обмерзання (−5…+2 °C, вологість >90%)',
+  dfCreate: 'ДОДАТИ БПЛА',
+  dfSaveChanges: 'ЗБЕРЕГТИ ЗМІНИ',
   windNoReturn: (w, v, kg) => `Вітер ${w} м/с близький до швидкості БПЛА ${v} м/с при вантажі ${kg} кг — повернення не гарантоване`,
   windAloftExceeds: (w, lim) => `Вітер на висоті 80 м ${w} м/с вище ліміту (${lim} м/с)`,
   windCutsRadius: (pct, km) => `Вітер зменшує радіус на ${pct}% (до ${km} км туди-назад)`,
@@ -938,6 +1007,40 @@ const en: Translations = {
   notesLabel: 'Notes',
   invalidField: (f) => `Invalid value: ${f}`,
   useOnDashboard: 'OPEN ON DASHBOARD',
+  dfPickTitle: 'Where do you want to start?',
+  dfPickHint: 'Pick the closest type — all values are filled in for you, and you can change any of them.',
+  dfBasedOn: 'Based on',
+  dfChangeTemplate: 'Change template',
+  dfSecBasics: 'Basics',
+  dfSecPerformance: 'Flight performance',
+  dfSecWeather: 'Weather limits',
+  dfSecEquipment: 'Equipment',
+  dfPerfHint: 'Choose how much data you have. Quick mode is enough for a weather check.',
+  dfWeatherHint: 'If the weather goes beyond these limits, the drone is rated NO-GO.',
+  dfModeQuick: 'Quick',
+  dfModeQuickHint: 'Range, flight time and wind limit. Payload is not taken into account.',
+  dfModeSpecs: 'From spec sheet',
+  dfModeSpecsHint: 'Payload, speed, radius. Flight time and radius change with payload — more accurate in the mission planner.',
+  dfNamePlaceholder: 'e.g. Vampire #2',
+  dfRequired: 'Required',
+  dfOptional: 'optional',
+  dfSingleValueHint: 'If the spec sheet gives a single value, leave "to" empty.',
+  dfErrRange: (lo, hi) => `Enter a number from ${lo} to ${hi}`,
+  dfErrNotAbove: (l) => `Can't be greater than "${l}"`,
+  dfErrNotBelow: (l) => `Can't be less than "${l}"`,
+  dfErrSummary: (n) => `${n} field${n === 1 ? '' : 's'} need${n === 1 ? 's' : ''} fixing`,
+  dfGroupPayload: 'Payload & weight',
+  dfGroupFlightTime: 'Flight time',
+  dfGroupSpeed: 'Max speed',
+  dfGroupRadius: 'Radius & range',
+  dfGroupWind: 'Wind',
+  dfGroupTemp: 'Temperature',
+  dfGroupPrecip: 'Precipitation & visibility',
+  dfThermalHint: 'Shows how well the thermal camera works in the current weather',
+  dfIpHint: 'Informational, shown in the drone details',
+  dfIcingHint: 'NO-GO when icing is likely (−5…+2 °C, humidity >90%)',
+  dfCreate: 'ADD DRONE',
+  dfSaveChanges: 'SAVE CHANGES',
   windNoReturn: (w, v, kg) => `Wind ${w} m/s is close to drone speed ${v} m/s at ${kg} kg payload — return not guaranteed`,
   windAloftExceeds: (w, lim) => `Wind at 80 m ${w} m/s above limit (${lim} m/s)`,
   windCutsRadius: (pct, km) => `Wind cuts radius by ${pct}% (to ${km} km out-and-back)`,

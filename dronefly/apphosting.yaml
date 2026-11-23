@@ -2,7 +2,10 @@
 # See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
   minInstances: 0
-  # maxInstances: 100
+  # Hard ceiling on scale-out to bound cost (weather + calculations run in the browser,
+  # so the server only serves pages and auth/invite APIs). 3 × 80 concurrency ≈ 240
+  # simultaneous requests. Raise if users start seeing 429/503 under real load.
+  maxInstances: 3
   # concurrency: 80
   # cpu: 1
   # memoryMiB: 512
