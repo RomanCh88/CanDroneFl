@@ -6,7 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 // "Say thanks" button + popup. The service stays free; donations go to the author's unit's
 // fundraising jar, NOT to DroneFly — no feature, ad or paywall depends on them. Keep it that way:
 // the Open-Meteo free API is for non-commercial use only.
-export const THANKS_JAR_URL = 'https://send.monobank.ua/jar/88F924Sby1';
+export const THANKS_JAR_URL = 'https://send.monobank.ua/jar/3jRxYUB7XJ';
 
 export default function ThanksButton() {
   const { tr } = useLanguage();
